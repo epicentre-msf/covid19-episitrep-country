@@ -1,0 +1,167 @@
+---
+title: "MSF EpiSitrep on Covid-19 epidemic"
+output: 
+  officedown::rdocx_document:
+    reference_docx: template_country_episitrep.docx
+    lists:
+      ol.style: 'List number'
+      ul.style: 'List bullet'
+    tables:
+      style: Table Grid
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+# reference_docx: epi_template.docx
+knitr::opts_chunk$set(echo = FALSE, fig.cap = TRUE)
+
+# Set environment
+if (!exists('path.root')) {
+  source(here::here('R', 'setup.r'), encoding = 'UTF-8')
+}
+
+df_countries     <- readRDS(file.path(path.data, paste0('df_countries','.RDS')))
+df_pop_country   <- readRDS(file.path(path.data, paste0('df_pop_country','.RDS')))
+
+iso_country <- 'AFG'
+
+name_country <- df_countries %>% filter(iso_a3 == iso_country) %>% pull(country)
+
+
+# Default folder structure for country and week
+source(file.path(path.R, "set_time_frame.R")  , encoding = "UTF-8")
+
+```
+
+
+```{r Import_data, include=FALSE}
+
+#load(file.path(path.sharepoint.ecdc.analysis, paste0('episitrep_worldwide_analyses_', week_report, '.RData')))
+
+```
+
+
+```{r parameters, include=FALSE}
+
+my_doc <- read_docx(file.path(path.templates, 'template_country_episitrep.docx'))
+
+txt_page_width  <- docx_dim(my_doc)$page[[1]] - docx_dim(my_doc)$margins[[3]] - docx_dim(my_doc)$margins[[4]]
+
+cm_to_in <- 0.39370079
+inter_col_width <- cm_to_in
+txt_col_width   <- (txt_page_width - inter_col_width)/2
+
+
+# Create new styles
+# PS: still did not understand how to use the template styles with officedown
+
+fp_par_title <- fp_par(
+  text.align = "center")
+
+fp_text_title <- fp_text(
+  color = '#2F5496', 
+  font.family = 'Calibri Light', 
+  font.size = 28, 
+  bold = TRUE)
+
+fs_title <- fpar(fp_p = fp_par_title, fp_t = fp_text_title)
+
+fp_par_subtitle <- fp_par(
+  text.align = "center")
+
+fp_text_subtitle <- fp_text(
+  color = '#2F5496', 
+  font.family = 'Calibri Light', 
+  font.size = 18, 
+  bold = TRUE)
+
+fp_text_description <- fp_text(
+  font.family = 'Calibri', 
+  font.size = 8, 
+  bold = TRUE)
+
+fp_par_description <- fp_par(
+  text.align = "left", 
+  padding.bottom = 5, 
+  border.bottom = fp_border())
+
+fp_text_hightlight <- fp_text(
+  font.family = 'Calibri', 
+  font.size = 10,
+  shading.color = "yellow")
+
+
+fp_par_no_padding <- fp_par(
+  padding.bottom = 0, 
+  padding.top = 0)
+
+my_doc$styles
+
+```
+
+<!-- The second part of the title -->
+`r fpar("OC/Intersection, Country, Project]", fp_p = fp_par_title, fp_t = update(fp_text_title, shading.color = "yellow"))`
+
+<!-- The week is to be automatised -->
+`r ftext("Week 29-2020", fp_text_subtitle)` `r fp_par_subtitle`
+
+This is a report that describes the evolution of the current Covid-19 epidemic in `r ftext("[Country to be precised]", fp_text_hightlight)`. It intends to support MSF in their Covid-19 intervention projects. `r fp_par_description`
+
+An MSF intersection EpiSitrep that describes the evolution of the epidemic worldwide and in MSF projects is also available as well as two dashboards for the [Description of the epidemic worldwide](https://reports.msf.net/public/covid19/) and for the [Description of the epidemic in MSF projects](https://reports.msf.net/secure/app/covid19-linelist-dashboard) ([sign-up here](https://reports.msf.net/signup/)). `r fp_par_description`
+
+This report was compiled by `r ftext("[to be precised]", fp_text_hightlight)`, with the support of Epicentre.`r fp_par_description`
+
+
+<!---BLOCK_MULTICOL_START--->
+
+__Data sources__
+
+-	[ECDC data](https://opendata.ecdc.europa.eu/covid19/casedistribution/csv) last updated [01 Jul 2020] `r fp_par_no_padding`
+-	MSF linelists compiled by Epicentre `r fp_par_no_padding`
+-	MSF [GIS Unit](https://mapcentre.msf.org/) (baseline country maps) `r fp_par_no_padding`
+-	[FIND Diagnostics resource centre unit](https://www.finddx.org/covid-19/) for data on Covid-19 tests `r fp_par_no_padding`
+
+`r run_columnbreak()`
+__Definitions and analysis methods__
+
+Definitions of increasing, declining and stable trends and the definition of doubling time, as well as detailed information on the analysis methods can be found [here](https://msfintl-my.sharepoint.com/:u:/g/personal/francesco_grandesso_epicentre_msf_org/EZqExKcP8axMj06voaLlveABpiicCfzkk5OWB-EaJvo9Fw?e=lwU1eM).`r fp_par_no_padding`
+
+`r run_columnbreak()`
+__Useful links__
+
+- [MSF Covid-19 Information Hub](https://msfintl.sharepoint.com/sites/msfintlcommunities/Covid-19/SitePages/Home.aspx)`r fp_par_no_padding`
+- [MSF activities on Covid-19](https://msfintl.sharepoint.com/sites/msfintlcommunities/Covid-19/MSF Updates/COVID-19 MSF Updates/)`r fp_par_no_padding`
+- [Literature review by INSERM](https://reacting.inserm.fr/literature-review/)`r fp_par_no_padding`
+- [Epicentre Covid19 blog](https://msfintl.sharepoint.com/sites/grp-epi-proj-ncov/SitePages/About.aspx)`r fp_par_no_padding`
+
+<!---BLOCK_MULTICOL_STOP{widths: [`r rep(txt_col_width * 2/3, 3)`], space: `r inter_col_width/2`, sep: false}--->
+
+---
+
+# Epidemiological situation in the country (external data)
+## Evolution in cases and trends
+
+<!---BLOCK_MULTICOL_START--->
+
+Considering ECDC data, `r ftext("[country]", fp_text_hightlight)` reported an `r ftext("[increasing/stable/decreasing]", fp_text_hightlight)` trend in covid19 cases and an `r ftext("[increasing/stable/decreasing]", fp_text_hightlight)` trend in deaths for week __26 (using reports from the 17th to the 28th June 2020)__. Last week, reported trend in covid19 cases was `r ftext("[increasing/stable/decreasing]", fp_text_hightlight)` and reported trend in covid19 deaths was `r ftext("[increasing/stable/decreasing]", fp_text_hightlight)`. The doubling in cases was estimated at X days, and the doubling time in cases at Y days.
+It has been X days since `r ftext("[country]", fp_text_hightlight)`. reported an increasing trend.
+As of `r ftext("28th June 2020, the attack rate in cases was of [] and the attack rate in deaths of []", fp_text_hightlight)`. 
+
+
+<!---BLOCK_MULTICOL_STOP{widths: [`r rep(txt_col_width , 2)`], space: `r inter_col_width`, sep: false}--->
+
+
+
+```{r fig.id="plot", fig.cap="boxplot imported from images folder", echo=FALSE}
+
+knitr::include_graphics(file.path(path.sharepoint.country.plot, paste0('trends_', name_country, '_', week_report, '.png')))
+
+``` 
+
+
+<!---BLOCK_MULTICOL_START--->
+
+This is a Normal text in three columns. This is a Normal text in three columns. This is a Normal text in three columns. This is a Normal text in three columns. 
+
+<!---BLOCK_MULTICOL_STOP{widths: [`r rep(txt_col_width * 2/3, 3)`], space: `r inter_col_width/2`, sep: false}--->

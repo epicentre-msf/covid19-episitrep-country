@@ -13,31 +13,38 @@ editor_options:
 ---
 
 ```{r setup, include=FALSE}
-# reference_docx: epi_template.docx
+
 knitr::opts_chunk$set(echo = FALSE, fig.cap = TRUE)
 
 # Set environment
-if (!exists('path.root')) {
-  source(here::here('R', 'setup.r'), encoding = 'UTF-8')
-}
+source(here::here('R', 'setup.r'), encoding = 'UTF-8')
 
-df_countries     <- readRDS(file.path(path.data, paste0('df_countries','.RDS')))
-df_pop_country   <- readRDS(file.path(path.data, paste0('df_pop_country','.RDS')))
-
-iso_country <- 'AFG'
-
-name_country <- df_countries %>% filter(iso_a3 == iso_country) %>% pull(country)
-
-
-# Default folder structure for country and week
-source(file.path(path.R, "set_time_frame.R")  , encoding = "UTF-8")
+source(file.path(path.R, "utils_management.R"), encoding = "UTF-8")
+source(file.path(path.R, "utils_vis.R")       , encoding = "UTF-8")
+source(file.path(path.R, "utils_get_data.R")  , encoding = "UTF-8")
 
 ```
 
+```{r import-data, include=FALSE}
 
-```{r Import_data, include=FALSE}
+# Get geo data
+sf_world <- get_world_sf(scale = 'small', proj = 'robinson', update_data = TRUE)
 
-#load(file.path(path.sharepoint.ecdc.analysis, paste0('episitrep_worldwide_analyses_', week_report, '.RData')))
+# Get list of countries (with pop)
+df_countries <- get_countries_list()
+
+```
+
+```{r select-country, include=FALSE}
+
+iso_country <- 'AFG'
+
+name_country <- df_countries %>% 
+  filter(iso_a3 == iso_country) %>% 
+  pull(country)
+
+# Default folder structure for country and week
+source(file.path(path.R, "set_time_frame.R")  , encoding = "UTF-8")
 
 ```
 
@@ -152,10 +159,14 @@ As of `r ftext("28th June 2020, the attack rate in cases was of [] and the attac
 <!---BLOCK_MULTICOL_STOP{widths: [`r rep(txt_col_width , 2)`], space: `r inter_col_width`, sep: false}--->
 
 
+<!-- === === === === === === === === === === === === === === === 
+From this point all chunks are to be independent from each others
+=== === === === === === === === === === === === === === === === -->
 
-```{r fig.id="plot", fig.cap="boxplot imported from images folder", echo=FALSE}
 
-knitr::include_graphics(file.path(path.sharepoint.country.plot, paste0('trends_', name_country, '_', week_report, '.png')))
+```{r }
+# by Francesco
+# 6-plots with counts of cases and deaths, 30-days and 12 days trends
 
 ``` 
 
@@ -165,3 +176,8 @@ knitr::include_graphics(file.path(path.sharepoint.country.plot, paste0('trends_'
 This is a Normal text in three columns. This is a Normal text in three columns. This is a Normal text in three columns. This is a Normal text in three columns. 
 
 <!---BLOCK_MULTICOL_STOP{widths: [`r rep(txt_col_width * 2/3, 3)`], space: `r inter_col_width/2`, sep: false}--->
+
+
+# TO CONTINUE FROM HERE
+
+

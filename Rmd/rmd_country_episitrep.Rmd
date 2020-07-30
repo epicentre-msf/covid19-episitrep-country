@@ -121,7 +121,6 @@ This report was compiled by `r ftext("[to be precised]", fp_text_hightlight)`, w
 
 
 <!---BLOCK_MULTICOL_START--->
-
 __Data sources__
 
 -	[ECDC data](https://opendata.ecdc.europa.eu/covid19/casedistribution/csv) last updated [01 Jul 2020] `r fp_par_no_padding`
@@ -141,7 +140,6 @@ __Useful links__
 - [MSF activities on Covid-19](https://msfintl.sharepoint.com/sites/msfintlcommunities/Covid-19/MSF Updates/COVID-19 MSF Updates/)`r fp_par_no_padding`
 - [Literature review by INSERM](https://reacting.inserm.fr/literature-review/)`r fp_par_no_padding`
 - [Epicentre Covid19 blog](https://msfintl.sharepoint.com/sites/grp-epi-proj-ncov/SitePages/About.aspx)`r fp_par_no_padding`
-
 <!---BLOCK_MULTICOL_STOP{widths: [`r rep(txt_col_width * 2/3, 3)`], space: `r inter_col_width/2`, sep: false}--->
 
 ---
@@ -150,13 +148,11 @@ __Useful links__
 ## Evolution in cases and trends
 
 <!---BLOCK_MULTICOL_START--->
-
 Considering ECDC data, `r ftext("[country]", fp_text_hightlight)` reported an `r ftext("[increasing/stable/decreasing]", fp_text_hightlight)` trend in covid19 cases and an `r ftext("[increasing/stable/decreasing]", fp_text_hightlight)` trend in deaths for week __26 (using reports from the 17th to the 28th June 2020)__. Last week, reported trend in covid19 cases was `r ftext("[increasing/stable/decreasing]", fp_text_hightlight)` and reported trend in covid19 deaths was `r ftext("[increasing/stable/decreasing]", fp_text_hightlight)`. The doubling in cases was estimated at X days, and the doubling time in cases at Y days.
 It has been X days since `r ftext("[country]", fp_text_hightlight)`. reported an increasing trend.
 As of `r ftext("28th June 2020, the attack rate in cases was of [] and the attack rate in deaths of []", fp_text_hightlight)`. 
-
-
 <!---BLOCK_MULTICOL_STOP{widths: [`r rep(txt_col_width , 2)`], space: `r inter_col_width`, sep: false}--->
+
 
 
 <!-- === === === === === === === === === === === === === === === 
@@ -164,20 +160,348 @@ From this point all chunks are to be independent from each others
 === === === === === === === === === === === === === === === === -->
 
 
+<!-- Figure 1 - Epidemiological curves in cases and death. -->
 ```{r }
 # by Francesco
-# 6-plots with counts of cases and deaths, 30-days and 12 days trends
+# [Multiplot graphs for each country, displaying: 1. Epidemiological curve in daily cases, 2. Cases in the last 12 days, associated trend and confidence interval, 3. Epidemiological curve in daily deaths and 4. Deaths in the last 12 days, associated trend and confidence interval]
 
 ``` 
 
 
 <!---BLOCK_MULTICOL_START--->
 
-This is a Normal text in three columns. This is a Normal text in three columns. This is a Normal text in three columns. This is a Normal text in three columns. 
+`r stringi::stri_rand_lipsum(nparagraphs = 1, start_lipsum = TRUE)`
+ 
+<!---BLOCK_MULTICOL_STOP{widths: [`r rep(txt_col_width , 2)`], space: `r inter_col_width`, sep: false}--->
 
-<!---BLOCK_MULTICOL_STOP{widths: [`r rep(txt_col_width * 2/3, 3)`], space: `r inter_col_width/2`, sep: false}--->
+
+```{r}
+# by ???
+#Table displaying: 
+# - cumulative case and deaths counts (since the beginning and in the last 12 days), 
+# - cumulative incidence in cases and deaths per 100,000 population, 
+# - naïve Case Fatality Risk, 
+# - trend in cases and deaths and associated confidence intervals]. 
 
 
-# TO CONTINUE FROM HERE
+# Or have a different appropriate table with AR, doubling time as well?
+```
+
+
+<!-- To be completed by comments and/or further analysis available at country level (geographical distribution of cases, description of cases through MoH linelist…) -->
+
+
+## Country situation in surveillance, social measures and testing 
+
+<!---BLOCK_MULTICOL_START--->
+As of `r ftext("[date]", fp_text_hightlight)`, `r ftext("country", fp_text_hightlight)` reported having performed `r ftext("X", fp_text_hightlight)` tests, including `r ftext("Y", fp_text_hightlight)` in the last 12 days `r ftext("[reliable/unreliable]", fp_text_hightlight)` data from FIND database. Unreliable data was defined as `r ftext("[to be precised]", fp_text_hightlight)`). The proportion of positivity was estimated at `r ftext("Z%", fp_text_hightlight)`. 
+<!---BLOCK_MULTICOL_STOP{widths: [`r rep(txt_col_width , 2)`], space: `r inter_col_width`, sep: false}--->
+
+
+
+# Analysis at MSF level
+
+<!---BLOCK_MULTICOL_START--->
+This section of the report analyses data reported by MSF in the reporting system created by Epicentre and distributed to MSF projects. Data can also be visualized and explored in the Epicentre Linelist Dashboard (see information besides).
+
+`r run_columnbreak()`
+**Epicentre dashboard for covid19 linelist data**
+
+- Go to this url to sign up with your MSF email address
+- Then consult the dashboard here
+- Navigate and use filters to display Linelist data of your interest
+<!---BLOCK_MULTICOL_STOP{widths: [`r rep(txt_col_width , 2)`], space: `r inter_col_width`, sep: false}--->
+
+---
+
+
+## Overview of reported data
+
+As of 28 June 2020, data were reported from X MSF project sites in the country (representing [list of OCs represented]), for a total of Y patients consulted and/or admitted, including Z confirmed. W projects however only reported aggregated data – they are included in Table 2 and Figure 2 only as of now but not in other analysis below nor in dashboard. 
+
+<!-- Table 2 – Projects reporting and associated numbers -->
+```{r}
+# By Francesco
+
+# Table with list of projects by country with counts by Covid status (confirmed, probable, suspected, not a case and unknown) and dates of first and last consultation/hospitalisation Projects reporting aggregated data are included in the table.
+```
+
+
+### How many patients consulted or were admitted in MSF facilities for covid19 and what is the evolution over time?
+
+Overall, X patients were consulted/admitted in MSF facilities since the beginning of the epidemic. Figure 2 below shows the weekly evolution of patient intake by covid status.
+
+<!-- Figure 2 - Weekly evolution of patient intake by covid status in country projects -->
+```{r}
+# By Paul
+
+# Histograms of number of patients consulted/admitted weekly in MSF facilities, filtered on OC/country/project, displayed by date of consultation and broken down by covid status
+```
+
+<!-- Figure 3 - Weekly evolution of patient intake by covid status in each of the country projects -->
+```{r}
+# By Paul 
+
+# Multifacet Histograms of number of patients consulted/admitted weekly for each MSF facility, filtered on OC/country/project, displayed by date of consultation and broken down by covid status]
+```
+
+Text to be completed as appropriate. 
+
+
+### How are these cases taken care of in MSF facilities?
+
+Overall, X patients were admitted in MSF facilities since the beginning of the epidemic, which represents Y% of the total patient intake.
+
+<!-- Table 3 – Overall proportions of cases in the different MSF projects -->
+```{r}
+# By Francesco
+
+#Tables of overall proportion of cases admitted or consulted, by covid status and by project
+```
+
+
+<!-- Figure 5 – Weekly evolution of patient intake in projects by consultation/admission status and proportion of admitted -->
+```{r}
+# by Paul
+
+# Histogram of number of consultation/admissions aggregated by week, broken down by admission status (consultation or admission), + curve displaying proportion of admitted, filtered by OC/ country/ project
+```
+
+
+<!-- Figure 6 - Weekly evolution of patient intake by covid status in each of the country projects -->
+```{r}
+# by Paul
+
+#Multifacet Histogram of number of consultation/admissions aggregated by week for each MSF project, broken down by admission status (consultation or admission), + curve displaying proportion of admitted, filtered by OC/ country/ project
+```
+
+To be completed as appropriate. 
+
+
+### How are these patients tested?
+
+Overall, X patients were tested in MSF facilities since the beginning of the epidemic, which represents Y% of the total patient intake.
+
+<!-- Figure 7 – Weekly evolution of number of tests, by test result and proportion of patients tested -->
+```{r}
+# by 
+
+#Histogram of overall number of tests aggregated by week, broken down by test result, + curve displaying proportion of tested, filtered by OC/country/project
+```
+
+
+To be completed as appropriate. 
+
+
+### What are the main characteristics of patients consulted/admitted in MSF facilities related to Covid19 (including non-cases – for others see below)?
+
+
+Overall, X asymptomatic patients were classified suspect, probable or confirmed for covid19 since the beginning of the epidemic (Y in the last [week/two weeks/month]). Z of them were confirmed (W in the last week). 
+
+
+<!-- Table 4 – Age and sex distribution by covid status in MSF projects -->
+```{r}
+# by Francesco
+
+# Table displaying age (median, IQR, min-max) and sex distribution, by Covid19 status, filtered by OC /country/ project
+```
+
+
+To be completed as appropriate. 
+
+<!-- Figure 8 – Frequency and proportion of symptoms in covid19 patients presenting in MSF facilities, by covid19 status -->
+```{r}
+# by Paul
+
+# Histogram with frequency and proportion of recorded symptoms, by Covid19 status, filtered by OC /country/ project
+```
+
+To be completed as appropriate. 
+
+<!-- Figure 9 – Frequency and proportion of morbidities in non-case covid19 patients -->
+```{r}
+# by Paul
+
+# Histogram with frequency and proportion of recorded diagnosis, filtered by OC /country/ project
+```
+
+
+To be completed as appropriate. 
+
+<!-- Figure 10 – Case Fatality Risk by covid status and project -->
+```{r}
+# by Francesco
+
+# Case Fatality Risk by covid status and project, filtered by OC /country/ project
+```
+
+
+To be completed as appropriate. 
+
+
+
+## Description of Covid19 [confirmed/probable/suspect] patients
+
+### Characteristics of the patients
+
+X [confirmed/probable/suspect] patients were recorded in MSF facilities.
+
+<!-- Figure 11 – Age and sex pyramid of [confirmed/probable/suspect] patients in MSF facilities -->
+```{r}
+# by Paul
+
+# Age/sex pyramid of patients, filtered by OC /country/ project
+```
+
+To be completed as appropriate. 
+
+<!-- Figure 12 – Age and sex pyramid of [confirmed/probable/suspect] patients in each of the MSF facilities -->
+```{r}
+# by Paul
+
+# [Multifacet Age/sex pyramid of patients for each project, filtered by OC /country/ project]
+```
+
+
+To be completed as appropriate. 
+
+### What type of covid19 exposure was recorded for these patients?
+
+Overall, X patients recorded a type of exposure among patients received in MSF facilities.
+
+<!-- Figure 13 – Different exposures recorded among [confirmed/probable/suspect] patients in MSF facilities -->
+```{r}
+# by Paul
+
+# [Graph displaying number and proportion of different types of exposure of [confirmed/probable/suspect]cases (working in healthcare facility, visiting a healthcare facility, through contact with confirmed case, in a different country), filtered by OC /country/ project]
+```
+
+To be completed as appropriate. 
+
+### What are the underlying conditions of these patients?
+<!-- Frequency and proportions of the number of comorbidities recorded among [confirmed/probable/suspect] patients in MSF facilities -->
+```{r}
+# by Francesco
+
+#[Table of frequency and proportions of [confirmed/probable/suspect] cases cases with 0, 1, 2, 3 or more comorbidities, filtered by OC /country/ project]
+```
+
+
+
+To be completed as appropriate. 
+
+<!-- Frequency and proportions of each recorded comorbidities among [confirmed/probable/suspect] patients in MSF facilities -->
+```{r}
+# by Francesco
+
+# [Table displaying the frequency and proportion of cases with each recorded comorbidities, by projects, filtered by OC /country/ project]
+
+```
+
+To be completed as appropriate
+
+### What is the level of care received by these patients?
+
+<!-- Number and proportions of the different level of care in admitted [confirmed/probable/suspect] patients in MSF facilities
+To be completed as appropriate -->
+```{r}
+# by Paul
+
+# [Graph displaying number and proportions of [confirmed/probable/suspect] patient who were admitted, received oxygen, admitted to ICU, or supported by ventilator or ECMO, aggregated by week, by project location, filtered by OC /country/ project]
+```
+
+
+<!-- Proportion of [confirmed/probable/suspect] patients having received oxygen therapy in MSF facilities according to age and reporting comorbidity or not -->
+```{r}
+# by Paul
+
+# [Graph displaying the proportion of cases receiving O2 according to age (continuous) and reporting comorbidity or not, filtered by OC /country/ project]
+```
+
+
+### What are the outcomes of these patients?
+
+<!-- Frequency and proportions of each recorded outcome in [confirmed/probable/suspect] patients in MSF facilities, by age groups -->
+```{r}
+# by Francesco
+
+# [Table displaying frequency and proportions of each recorded outcome, by age groups, filtered by OC /country/ project]
+```
+
+<!-- Case fatality risk in [confirmed/probable/suspect] patients in MSF facilities, by age groups, sex and by project -->
+```{r}
+# by Francseco
+
+# [Table displaying the Case Fatality Risk, by age groups, sex and by project, filtered by OC /country/ project]
+ 
+```
+
+To be completed as appropriate.
+
+<!-- Case fatality risk in the different age groups among [confirmed/probable/suspect] patients in MSF facilities
+To be completed as appropriate -->
+
+```{r}
+# by Paul
+
+#[Graph displaying the Case Fatality Risk, by age groups, with respective confidence intervals (died and recovered patients), filtered by OC /country/ project]
+```
+
+
+### Other operational indicators
+
+#### Delay from symptoms to consultation/admission
+
+The overall delay from symptoms to consultation/admission in MSF facilities was of X days. 
+
+<!-- Weekly distribution of delay from symptoms to consultation/admission of covid19 patients in MSF facilities -->
+```{r}
+# by Paul
+
+#[Box plot displaying distribution of delay from symptoms onset to consultation/admission, aggregated by week, with trend and filtered by OC /country/ project]
+```
+
+<!-- Weekly distribution of delay from symptoms to consultation/admission of covid19 patients in each of the MSF facilities
+To be completed as appropriate -->
+```{r}
+# by Paul
+
+# [Multifacet Box plot displaying distribution of delay from symptoms onset to consultation/admission, aggregated by week, with trend and filtered by OC /country/ project]
+```
+
+
+#### Length of stay
+
+The overall length of stay in MSF facilities was of X days. 
+
+<!--  Weekly distribution of length of stay of covid19 patients in MSF facilities -->
+```{r}
+# by Paul
+
+#[Box plot displaying distribution of length of stay for hospitalized patients (all hospitalized and admitted in ICU), aggregated by week, with trend and filtered by OC /country/ project. The last 2 weeks will be excluded due to uncomplete data]
+```
+
+<!-- Weekly distribution of length of stay of covid19 patients in each of the MSF facilities
+To be completed as appropriate -->
+```{r}
+# by Paul
+
+#[Multifacet Box plot displaying distribution of length of stay, aggregated by week, with trend and filtered by OC /country/ project]
+```
+
+
+#### Bed occupancy rates
+
+<!-- Bed occupancy rates in the projects reporting, in MSF facilities -->
+
+```{r}
+# by Francesco
+
+# [Table displaying bed occupancy rate, aggregated by week, by projects]
+```
+
+
+To be completed as appropriate. 
+
 
 

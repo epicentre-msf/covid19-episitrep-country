@@ -176,6 +176,10 @@ From this point all pairs of chunks are to be independent from each others
 
 # [Multiplot graphs for each country, displaying: 1. Epidemiological curve in daily cases, 2. Cases in the last 12 days, associated trend and confidence interval, 3. Epidemiological curve in daily deaths and 4. Deaths in the last 12 days, associated trend and confidence interval]
 
+dta_ecdc <- dta_ecdc %>% filter(iso_a3 == iso_country)
+
+
+
 ``` 
 
 <!-- Table 1 - Summary of the epidemic situation in the country -->

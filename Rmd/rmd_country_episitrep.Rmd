@@ -49,7 +49,7 @@ sf_world <- get_world_sf(scale = 'small', proj = 'robinson', update_data = TRUE)
 
 
 # Get ECDC data
-dta_ecdc <- get_ecdc_data() %>% prepare_ecdc_dta()
+dta_ecdc <- get_ecdc_data() %>% prepare_ecdc_dta() %>% filter(iso_a3 == iso_country)
 
 # Get MSF data
 path_latest_linelist <- max(list.files(file.path(path.sharepoint, "data/linelist/world"), pattern = "[.]rds$", full.names = TRUE))

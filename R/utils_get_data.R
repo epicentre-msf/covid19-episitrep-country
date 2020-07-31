@@ -83,6 +83,93 @@ get_countries_list <- function(update_data = FALSE) {
 
 
 
+
+get_msf_country_linelist <- function(iso_country, update_data = FALSE){
+  
+  # Note: 'path.sharepoint' is defined in setup.R
+  path.sharepoint.country.data <- file.path(path.sharepoint, 'data', 'linelist', 'country',iso_country)
+  
+  file_local <- file.path(path.local.country.week.data, paste0('dta_MSF_', iso_country, '_linelist', '.RDS'))
+  
+  if (update_data | !file.exists(file_local)) {
+    
+    dta_path <- max(fs::dir_ls(path.sharepoint.country.data, regexp = "[.]rds$"))
+    dta <- readRDS(dta_path)
+    saveRDS(dta, file_local)
+    
+  } else {
+    
+    dta <- readRDS(file_local)
+  }
+  
+  return(dta)
+  
+}
+
+
+
+get_msf_country_aggregated <- function(iso_country, update_data = FALSE) {
+  
+  file_local <- file.path(path.local.country.week.data, paste0('dta_MSF_', iso_country, '_aggregated', '.RDS'))
+  
+  if (update_data | !file.exists(file_local)) {
+    
+    # Note: 'path.sharepoint' is defined in setup.R
+    path.sharepoint.agg.data <- file.path(path.sharepoint, "coordination", "Surveillance focal points coordination", "Aggregated reporting", "Report_covid_aggregate_all_v2.xlsx")
+    
+    dta_names <- c("sheet", "oc", "country", "project", "date", "week", "suspected", "probable", "confirmed", "non_cases", "unknown")
+    
+    
+    dta_aggregated <- excel_sheets(path.sharepoint.agg.data) %>% 
+      setdiff(., c('Feuil1','Sheet1')) %>% 
+      map_df(~{
+        oc      <- read_excel(path = path.sharepoint.agg.data, sheet = .x, range = "B1", col_names = FALSE) %>% pull()
+        country <- read_excel(path = path.sharepoint.agg.data, sheet = .x, range = "D1", col_names = FALSE) %>% pull()
+        project <- read_excel(path = path.sharepoint.agg.data, sheet = .x, range = "F1", col_names = FALSE) %>% pull()
+        
+        read_excel(path = path.sharepoint.agg.data, sheet = .x, skip = 5, col_names = FALSE) %>% 
+          mutate(sheet = .x, oc = oc, country = country, project = project)
+      }) %>% 
+      select(sheet, oc, country, project, 1:7) %>% 
+      purrr::set_names(dta_names)
+    
+    
+    dta_expanded <- dta_aggregated %>% 
+      filter(!project %in% c('Lesvos-Moria', 'Lesvos-Moria Ped')) %>% 
+      select(-week) %>% 
+      mutate(
+        epi_week_consultation = make_epiweek_date(date) %>% as.Date(), 
+        country = case_when(
+          country == 'DRC' ~ 'Democratic Republic of the Congo', 
+          country == "Côte d'Ivoire" ~ 'Côte d’Ivoire', 
+          TRUE ~ country)) %>% 
+      left_join(df_countries, by = 'country') %>% 
+      filter(iso_a3 == iso_country) %>% 
+      pivot_longer(cols = c('confirmed', 'probable', 'suspected', 'non_cases', 'unknown'), names_to = 'covid_status') %>% 
+      filter(!is.na(value)) %>% 
+      mutate(obs = purrr::map(value, ~rep_len(1, .x))) %>%
+      unnest(cols = c(obs)) %>%
+      select(-c(value, obs)) %>% 
+      mutate(
+        covid_status = factor(covid_status, levels = c('confirmed', 'probable', 'suspected', 'non_cases', 'unknown'), labels = c('Confirmed', 'Probable', 'Suspected', 'Not a case', 'Unknown')), 
+        country = paste(country, '(*)'),
+        site_name = paste(project, '(*)')) 
+    
+    saveRDS(dta_expanded, file_local)
+    
+  } else {
+    
+    dta_expanded <- readRDS(file_local)
+  }
+  
+  return(dta_expanded)
+  
+}
+
+
+
+
+
 #' Import FIND test dataset
 #' 
 #' @export

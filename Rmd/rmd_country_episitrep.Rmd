@@ -1,11 +1,8 @@
 ---
-title: "MSF EpiSitrep on Covid-19 epidemic"
+title: "MSF country EpiSitrep on Covid-19 epidemic"
 output: 
   officedown::rdocx_document:
     reference_docx: template_country_episitrep.docx
-    lists:
-      ol.style: 'List number'
-      ul.style: 'List bullet'
     tables:
       style: Table Grid
 editor_options: 
@@ -25,17 +22,11 @@ source(file.path(path.R, "utils_get_data.R")  , encoding = "UTF-8")
 
 ```
 
-```{r import-data, include=FALSE}
 
-# Get geo data
-sf_world <- get_world_sf(scale = 'small', proj = 'robinson', update_data = TRUE)
+```{r select-country, include=FALSE}
 
 # Get list of countries (with pop)
 df_countries <- get_countries_list()
-
-```
-
-```{r select-country, include=FALSE}
 
 iso_country <- 'AFG'
 
@@ -49,6 +40,24 @@ source(file.path(path.R, "set_time_frame.R")  , encoding = "UTF-8")
 ```
 
 
+```{r import-data, include=FALSE}
+
+# Get geo data
+sf_world <- get_world_sf(scale = 'small', proj = 'robinson', update_data = TRUE)
+
+# TO PAUL We need to add country shapefiles
+
+
+# Get ECDC data
+dta_ecdc <- get_ecdc_data() %>% prepare_ecdc_dta()
+
+# Get MSF data
+dta_msf_linelist   <- get_msf_country_linelist(iso_country = iso_country)
+dta_msf_aggregated <- get_msf_country_aggregated(iso_country = iso_country)
+
+```
+
+
 ```{r parameters, include=FALSE}
 
 my_doc <- read_docx(file.path(path.templates, 'template_country_episitrep.docx'))
@@ -57,7 +66,7 @@ txt_page_width  <- docx_dim(my_doc)$page[[1]] - docx_dim(my_doc)$margins[[3]] - 
 
 cm_to_in <- 0.39370079
 inter_col_width <- cm_to_in
-txt_col_width   <- (txt_page_width - inter_col_width)/2
+txt_col_width <- (txt_page_width - inter_col_width)/2
 
 
 # Create new styles
@@ -98,28 +107,29 @@ fp_text_hightlight <- fp_text(
   font.size = 10,
   shading.color = "yellow")
 
-
 fp_par_no_padding <- fp_par(
   padding.bottom = 0, 
   padding.top = 0)
 
-my_doc$styles
-
 ```
 
-<!-- The second part of the title -->
-`r fpar("OC/Intersection, Country, Project]", fp_p = fp_par_title, fp_t = update(fp_text_title, shading.color = "yellow"))`
+<!-- The second part of the title - The name of the country -->
+`r ftext(name_country, fp_text_title)` `r fp_par_title`
 
-<!-- The week is to be automatised -->
-`r ftext("Week 29-2020", fp_text_subtitle)` `r fp_par_subtitle`
+<!-- The subtitle - The week and the dates -->
+`r ftext(paste('Week', lubridate::isoweek(date_max_report), '-', lubridate::isoyear(date_max_report)), fp_text_subtitle)` 
+`r ftext(paste0('(', format(date_max_report-6, "%d %B %Y"), ' to ', format(date_max_report, "%d %B %Y"), ')'), fp_text_subtitle)` 
+`r fp_par_subtitle`
 
-This is a report that describes the evolution of the current Covid-19 epidemic in `r ftext("[Country to be precised]", fp_text_hightlight)`. It intends to support MSF in their Covid-19 intervention projects. `r fp_par_description`
+<!-- A note of what this report is about -->
+This is a report that describes the evolution of the current Covid-19 epidemic in `r ftext(name_country, fp_text_hightlight)`. It intends to support MSF in their Covid-19 intervention projects. `r fp_par_description`
 
 An MSF intersection EpiSitrep that describes the evolution of the epidemic worldwide and in MSF projects is also available as well as two dashboards for the [Description of the epidemic worldwide](https://reports.msf.net/public/covid19/) and for the [Description of the epidemic in MSF projects](https://reports.msf.net/secure/app/covid19-linelist-dashboard) ([sign-up here](https://reports.msf.net/signup/)). `r fp_par_description`
 
 This report was compiled by `r ftext("[to be precised]", fp_text_hightlight)`, with the support of Epicentre.`r fp_par_description`
 
 
+<!-- A note of the sources of data and other useful links -->
 <!---BLOCK_MULTICOL_START--->
 __Data sources__
 
@@ -144,63 +154,88 @@ __Useful links__
 
 ---
 
-# Epidemiological situation in the country (external data)
+
+
+<!-- 
+=== === === === === === === === === === === === === === === === === === === 
+From this point all pairs of chunks are to be independent from each others
+=== === === === === === === === === === === === === === === === === === === 
+-->
+
+
+
+# Epidemiological situation in the `r name_country` (external data)
+
 ## Evolution in cases and trends
 
-<!---BLOCK_MULTICOL_START--->
-Considering ECDC data, `r ftext("[country]", fp_text_hightlight)` reported an `r ftext("[increasing/stable/decreasing]", fp_text_hightlight)` trend in covid19 cases and an `r ftext("[increasing/stable/decreasing]", fp_text_hightlight)` trend in deaths for week __26 (using reports from the 17th to the 28th June 2020)__. Last week, reported trend in covid19 cases was `r ftext("[increasing/stable/decreasing]", fp_text_hightlight)` and reported trend in covid19 deaths was `r ftext("[increasing/stable/decreasing]", fp_text_hightlight)`. The doubling in cases was estimated at X days, and the doubling time in cases at Y days.
-It has been X days since `r ftext("[country]", fp_text_hightlight)`. reported an increasing trend.
-As of `r ftext("28th June 2020, the attack rate in cases was of [] and the attack rate in deaths of []", fp_text_hightlight)`. 
-<!---BLOCK_MULTICOL_STOP{widths: [`r rep(txt_col_width , 2)`], space: `r inter_col_width`, sep: false}--->
-
-
-
-<!-- === === === === === === === === === === === === === === === 
-From this point all chunks are to be independent from each others
-=== === === === === === === === === === === === === === === === -->
-
-
-<!-- Figure 1 - Epidemiological curves in cases and death. -->
-```{r }
+<!-- Figure 1 - Epidemiological curves in cases and death -->
+```{r, include=FALSE}
+# Priority +++
 # by Francesco
+# make the graph here
+
 # [Multiplot graphs for each country, displaying: 1. Epidemiological curve in daily cases, 2. Cases in the last 12 days, associated trend and confidence interval, 3. Epidemiological curve in daily deaths and 4. Deaths in the last 12 days, associated trend and confidence interval]
 
 ``` 
 
+<!-- Table 1 - Summary of the epidemic situation in the country -->
+```{r, include=FALSE}
+# Priority +++
+# by Francesco
 
-<!---BLOCK_MULTICOL_START--->
-
-`r stringi::stri_rand_lipsum(nparagraphs = 1, start_lipsum = TRUE)`
- 
-<!---BLOCK_MULTICOL_STOP{widths: [`r rep(txt_col_width , 2)`], space: `r inter_col_width`, sep: false}--->
-
-
-```{r}
-# by ???
-#Table displaying: 
+# Table displaying: 
 # - cumulative case and deaths counts (since the beginning and in the last 12 days), 
 # - cumulative incidence in cases and deaths per 100,000 population, 
 # - naïve Case Fatality Risk, 
 # - trend in cases and deaths and associated confidence intervals]. 
 
-
 # Or have a different appropriate table with AR, doubling time as well?
+
 ```
 
+<!---BLOCK_MULTICOL_START--->
+Considering ECDC data, `r name_country` reported an **`r ftext("[increasing/stable/decreasing]", fp_text_hightlight)` trend in covid19 cases** and an **`r ftext("[increasing/stable/decreasing]", fp_text_hightlight)` trend in deaths** in the last 12 days**. Last week, reported trend in covid19 cases was `r ftext("[increasing/stable/decreasing]", fp_text_hightlight)` and reported trend in covid19 deaths was `r ftext("[increasing/stable/decreasing]", fp_text_hightlight)`. 
 
-<!-- To be completed by comments and/or further analysis available at country level (geographical distribution of cases, description of cases through MoH linelist…) -->
+The doubling in cases was estimated at X days, and the doubling time in cases at Y days. It has been X days since `r ftext("[country]", fp_text_hightlight)`. reported an increasing trend.
+As of `r ftext("28th June 2020, the attack rate in cases was of [xx%] and the attack rate in deaths of [XX%]", fp_text_hightlight)`. 
+
+<!-- To be completed by comments and/or further analysis available at country level (geographical distribution of cases, description of cases through MoH linelist) -->
+
+<!---BLOCK_MULTICOL_STOP{widths: [`r rep(txt_col_width , 2)`], space: `r inter_col_width`, sep: false}--->
+
+```{r plot-epicurve}
+# display the graph or table here
+```
+
+The gt table should appear here below
+
+```{r table-summary-epidemic}
+# display the graph or table here
+dta_ecdc %>% 
+  count(continent) %>% 
+  flextable::flextable() 
+
+
+```
 
 
 ## Country situation in surveillance, social measures and testing 
 
+```{r, include=FALSE}
+# Table of the number of tests
+# This table is not to be displayed. It is used by the text below
+```
+
+
 <!---BLOCK_MULTICOL_START--->
-As of `r ftext("[date]", fp_text_hightlight)`, `r ftext("country", fp_text_hightlight)` reported having performed `r ftext("X", fp_text_hightlight)` tests, including `r ftext("Y", fp_text_hightlight)` in the last 12 days `r ftext("[reliable/unreliable]", fp_text_hightlight)` data from FIND database. Unreliable data was defined as `r ftext("[to be precised]", fp_text_hightlight)`). The proportion of positivity was estimated at `r ftext("Z%", fp_text_hightlight)`. 
+As of `r ftext(format(date_max_report, "%d %B %Y"), fp_text_hightlight)`, `r ftext(name_country, fp_text_hightlight)` reported having performed `r ftext("X", fp_text_hightlight)` tests, including `r ftext("Y", fp_text_hightlight)` in the last 12 days `r ftext("[reliable/unreliable]", fp_text_hightlight)` data from FIND database. Unreliable data was defined as `r ftext("[to be precised]", fp_text_hightlight)`). The proportion of positivity was estimated at `r ftext("Z%", fp_text_hightlight)`.
 <!---BLOCK_MULTICOL_STOP{widths: [`r rep(txt_col_width , 2)`], space: `r inter_col_width`, sep: false}--->
 
 
 
 # Analysis at MSF level
 
+<!-- A note of what this report section is about and other useful links -->
 <!---BLOCK_MULTICOL_START--->
 This section of the report analyses data reported by MSF in the reporting system created by Epicentre and distributed to MSF projects. Data can also be visualized and explored in the Epicentre Linelist Dashboard (see information besides).
 
@@ -217,19 +252,27 @@ This section of the report analyses data reported by MSF in the reporting system
 
 ## Overview of reported data
 
-As of 28 June 2020, data were reported from X MSF project sites in the country (representing [list of OCs represented]), for a total of Y patients consulted and/or admitted, including Z confirmed. W projects however only reported aggregated data – they are included in Table 2 and Figure 2 only as of now but not in other analysis below nor in dashboard. 
+### Projects reporting data
+
+<!---BLOCK_MULTICOL_START--->
+As of `r format(date_max_report, "%d-%b-%Y")`, data were reported from `r ftext("X", fp_text_hightlight)` MSF project sites in the country (representing `r ftext("list of OCs represented", fp_text_hightlight)`), for a total of Y patients consulted and/or admitted, including `r ftext("Z", fp_text_hightlight)` confirmed. `r ftext("X", fp_text_hightlight)` projects however only reported aggregated data – they are included in Table 2 and Figure 2 only as of now but not in other analysis below nor in dashboard. 
+<!---BLOCK_MULTICOL_STOP{widths: [`r rep(txt_col_width , 2)`], space: `r inter_col_width`, sep: false}--->
 
 <!-- Table 2 – Projects reporting and associated numbers -->
 ```{r}
-# By Francesco
+# Piority +++
+# by Francesco
 
 # Table with list of projects by country with counts by Covid status (confirmed, probable, suspected, not a case and unknown) and dates of first and last consultation/hospitalisation Projects reporting aggregated data are included in the table.
 ```
 
 
-### How many patients consulted or were admitted in MSF facilities for covid19 and what is the evolution over time?
+### Number of patients consulted or admitted in MSF Covid-19 facilities and their the evolution over time
 
-Overall, X patients were consulted/admitted in MSF facilities since the beginning of the epidemic. Figure 2 below shows the weekly evolution of patient intake by covid status.
+<!---BLOCK_MULTICOL_START--->
+Overall, `r ftext("X", fp_text_hightlight)` patients were consulted/admitted in MSF facilities since the beginning of the epidemic. Figure 2 below shows the weekly evolution of patient intake by covid status.
+<!---BLOCK_MULTICOL_STOP{widths: [`r rep(txt_col_width , 2)`], space: `r inter_col_width`, sep: false}--->
+
 
 <!-- Figure 2 - Weekly evolution of patient intake by covid status in country projects -->
 ```{r}
@@ -245,15 +288,39 @@ Overall, X patients were consulted/admitted in MSF facilities since the beginnin
 # Multifacet Histograms of number of patients consulted/admitted weekly for each MSF facility, filtered on OC/country/project, displayed by date of consultation and broken down by covid status]
 ```
 
-Text to be completed as appropriate. 
+<!---BLOCK_MULTICOL_START--->
+`r ftext("Text comment/interpretation etc. on the graphs and/or tables below.", fp_text_hightlight)`
+`r run_columnbreak()`
+`r ftext("The text is in two column format for easing the reading.", fp_text_hightlight)`
+<!---BLOCK_MULTICOL_STOP{widths: [`r rep(txt_col_width , 2)`], space: `r inter_col_width`, sep: false}--->
+
+```{r}
+# Display graph or table produced in the chunk above
+```
 
 
-### How are these cases taken care of in MSF facilities?
+### Origin of patients
 
-Overall, X patients were admitted in MSF facilities since the beginning of the epidemic, which represents Y% of the total patient intake.
+Origin of the patients are displayed in the map below (figure 3). 
+
+<!-- Figure 4 – Mapping of patient origin within the country -->
+```{r}
+#Priority +
+# by Paul
+
+#[Country map of cases consulted/admitted in MSF facilities, filtered by OC/country/project, displaying cases according to administrative levels 1 (often region/province), 2 or 3 (lower administrative levels according to local releva
+```
+nce)].
+
+
+
+### Major cares procedures in MSF facilities
+
+Overall, `r ftext("X", fp_text_hightlight)` patients were admitted in MSF facilities since the beginning of the epidemic, which represents `r ftext("Y%", fp_text_hightlight)` of the total patients who accessed to an MSF facility in the country.
 
 <!-- Table 3 – Overall proportions of cases in the different MSF projects -->
 ```{r}
+# Priority +++
 # By Francesco
 
 #Tables of overall proportion of cases admitted or consulted, by covid status and by project
@@ -262,89 +329,141 @@ Overall, X patients were admitted in MSF facilities since the beginning of the e
 
 <!-- Figure 5 – Weekly evolution of patient intake in projects by consultation/admission status and proportion of admitted -->
 ```{r}
+# Priority +++
 # by Paul
 
 # Histogram of number of consultation/admissions aggregated by week, broken down by admission status (consultation or admission), + curve displaying proportion of admitted, filtered by OC/ country/ project
 ```
 
-
 <!-- Figure 6 - Weekly evolution of patient intake by covid status in each of the country projects -->
 ```{r}
+# Priority +++
 # by Paul
 
-#Multifacet Histogram of number of consultation/admissions aggregated by week for each MSF project, broken down by admission status (consultation or admission), + curve displaying proportion of admitted, filtered by OC/ country/ project
+#Multifacet Histogram of number of consultation/admissions aggregated by week for each MSF project, broken down by admission status (consultation or admission), + curve displaying proportion of admitted
 ```
 
-To be completed as appropriate. 
+<!---BLOCK_MULTICOL_START--->
+`r ftext("Text comment/interpretation etc. on the graphs and/or tables below.", fp_text_hightlight)`
+`r run_columnbreak()`
+`r ftext("The text is in two column format for easing the reading.", fp_text_hightlight)`
+<!---BLOCK_MULTICOL_STOP{widths: [`r rep(txt_col_width , 2)`], space: `r inter_col_width`, sep: false}--->
+
+```{r}
+# Display graph or table produced in the chunk above
+```
 
 
-### How are these patients tested?
+### Covid-19 tests
 
-Overall, X patients were tested in MSF facilities since the beginning of the epidemic, which represents Y% of the total patient intake.
+Overall, `r ftext("X", fp_text_hightlight)` patients were tested in MSF facilities since the beginning of the epidemic, which represents `r ftext("X", fp_text_hightlight)` of the total patients who were consulted/admitted.
 
 <!-- Figure 7 – Weekly evolution of number of tests, by test result and proportion of patients tested -->
 ```{r}
-# by 
+# Priority +
+# by Paul
 
 #Histogram of overall number of tests aggregated by week, broken down by test result, + curve displaying proportion of tested, filtered by OC/country/project
 ```
 
+<!---BLOCK_MULTICOL_START--->
+`r ftext("Text comment/interpretation etc. on the graphs and/or tables below.", fp_text_hightlight)`
+`r run_columnbreak()`
+`r ftext("The text is in two column format for easing the reading.", fp_text_hightlight)`
+<!---BLOCK_MULTICOL_STOP{widths: [`r rep(txt_col_width , 2)`], space: `r inter_col_width`, sep: false}--->
 
-To be completed as appropriate. 
+```{r}
+# Display graph or table produced in the chunk above
+```
 
 
-### What are the main characteristics of patients consulted/admitted in MSF facilities related to Covid19 (including non-cases – for others see below)?
+## Characteristics of patients consulted/admitted in MSF Covid-19 facilities 
+<!-- including non-cases -->
 
 
-Overall, X asymptomatic patients were classified suspect, probable or confirmed for covid19 since the beginning of the epidemic (Y in the last [week/two weeks/month]). Z of them were confirmed (W in the last week). 
+Overall, `r ftext("X", fp_text_hightlight)` asymptomatic patients were classified suspect, probable or confirmed for covid19 since the beginning of the epidemic (`r ftext("Y", fp_text_hightlight)` in the last `r ftext("[week/two weeks/month]", fp_text_hightlight)`). `r ftext("Z", fp_text_hightlight)` of them were confirmed (`r ftext("W", fp_text_hightlight)` in the last week). 
 
 
 <!-- Table 4 – Age and sex distribution by covid status in MSF projects -->
 ```{r}
+# Priority +++
 # by Francesco
 
 # Table displaying age (median, IQR, min-max) and sex distribution, by Covid19 status, filtered by OC /country/ project
 ```
 
+<!---BLOCK_MULTICOL_START--->
+`r ftext("Text comment/interpretation etc. on the graphs and/or tables below.", fp_text_hightlight)`
+`r run_columnbreak()`
+`r ftext("The text is in two column format for easing the reading.", fp_text_hightlight)`
+<!---BLOCK_MULTICOL_STOP{widths: [`r rep(txt_col_width , 2)`], space: `r inter_col_width`, sep: false}--->
 
-To be completed as appropriate. 
+```{r}
+# Display graph or table produced in the chunk above
+```
+
 
 <!-- Figure 8 – Frequency and proportion of symptoms in covid19 patients presenting in MSF facilities, by covid19 status -->
 ```{r}
+# Priority ++
 # by Paul
 
 # Histogram with frequency and proportion of recorded symptoms, by Covid19 status, filtered by OC /country/ project
 ```
 
-To be completed as appropriate. 
+<!---BLOCK_MULTICOL_START--->
+`r ftext("Text comment/interpretation etc. on the graphs and/or tables below.", fp_text_hightlight)`
+`r run_columnbreak()`
+`r ftext("The text is in two column format for easing the reading.", fp_text_hightlight)`
+<!---BLOCK_MULTICOL_STOP{widths: [`r rep(txt_col_width , 2)`], space: `r inter_col_width`, sep: false}--->
 
-<!-- Figure 9 – Frequency and proportion of morbidities in non-case covid19 patients -->
 ```{r}
-# by Paul
-
-# Histogram with frequency and proportion of recorded diagnosis, filtered by OC /country/ project
+# Display graph or table produced in the chunk above
 ```
 
 
-To be completed as appropriate. 
+<!-- Figure 9 – Frequency and proportion of morbidities in non-case covid-19 patients -->
+```{r}
+# by Paul
+
+# Histogram? (I think it is better a table) with frequency and proportion of recorded diagnosis, filtered by OC /country/ project
+```
+
+<!---BLOCK_MULTICOL_START--->
+`r ftext("Text comment/interpretation etc. on the graphs and/or tables below.", fp_text_hightlight)`
+`r run_columnbreak()`
+`r ftext("The text is in two column format for easing the reading.", fp_text_hightlight)`
+<!---BLOCK_MULTICOL_STOP{widths: [`r rep(txt_col_width , 2)`], space: `r inter_col_width`, sep: false}--->
+
+```{r}
+# Display graph or table produced in the chunk above
+```
+
 
 <!-- Figure 10 – Case Fatality Risk by covid status and project -->
 ```{r}
+# Priority +++
 # by Francesco
 
 # Case Fatality Risk by covid status and project, filtered by OC /country/ project
 ```
 
+<!---BLOCK_MULTICOL_START--->
+`r ftext("Text comment/interpretation etc. on the graphs and/or tables below.", fp_text_hightlight)`
+`r run_columnbreak()`
+`r ftext("The text is in two column format for easing the reading.", fp_text_hightlight)`
+<!---BLOCK_MULTICOL_STOP{widths: [`r rep(txt_col_width , 2)`], space: `r inter_col_width`, sep: false}--->
 
-To be completed as appropriate. 
+```{r}
+# Display graph or table produced in the chunk above
+```
 
 
 
 ## Description of Covid19 [confirmed/probable/suspect] patients
-
 ### Characteristics of the patients
 
-X [confirmed/probable/suspect] patients were recorded in MSF facilities.
+`r ftext("X [confirmed/probable/suspect]", fp_text_hightlight)` patients were recorded in MSF facilities.
 
 <!-- Figure 11 – Age and sex pyramid of [confirmed/probable/suspect] patients in MSF facilities -->
 ```{r}
@@ -353,7 +472,16 @@ X [confirmed/probable/suspect] patients were recorded in MSF facilities.
 # Age/sex pyramid of patients, filtered by OC /country/ project
 ```
 
-To be completed as appropriate. 
+<!---BLOCK_MULTICOL_START--->
+`r ftext("Text comment/interpretation etc. on the graphs and/or tables below.", fp_text_hightlight)`
+`r run_columnbreak()`
+`r ftext("The text is in two column format for easing the reading.", fp_text_hightlight)`
+<!---BLOCK_MULTICOL_STOP{widths: [`r rep(txt_col_width , 2)`], space: `r inter_col_width`, sep: false}--->
+
+```{r}
+# Display graph or table produced in the chunk above
+```
+
 
 <!-- Figure 12 – Age and sex pyramid of [confirmed/probable/suspect] patients in each of the MSF facilities -->
 ```{r}
@@ -362,33 +490,59 @@ To be completed as appropriate.
 # [Multifacet Age/sex pyramid of patients for each project, filtered by OC /country/ project]
 ```
 
+<!---BLOCK_MULTICOL_START--->
+`r ftext("Text comment/interpretation etc. on the graphs and/or tables below.", fp_text_hightlight)`
+`r run_columnbreak()`
+`r ftext("The text is in two column format for easing the reading.", fp_text_hightlight)`
+<!---BLOCK_MULTICOL_STOP{widths: [`r rep(txt_col_width , 2)`], space: `r inter_col_width`, sep: false}--->
 
-To be completed as appropriate. 
+```{r}
+# Display graph or table produced in the chunk above
+```
 
-### What type of covid19 exposure was recorded for these patients?
+
+### Type of exposure to the  Covid-19 infection
 
 Overall, X patients recorded a type of exposure among patients received in MSF facilities.
 
 <!-- Figure 13 – Different exposures recorded among [confirmed/probable/suspect] patients in MSF facilities -->
 ```{r}
+# Priority +
 # by Paul
 
 # [Graph displaying number and proportion of different types of exposure of [confirmed/probable/suspect]cases (working in healthcare facility, visiting a healthcare facility, through contact with confirmed case, in a different country), filtered by OC /country/ project]
 ```
 
-To be completed as appropriate. 
+<!---BLOCK_MULTICOL_START--->
+`r ftext("Text comment/interpretation etc. on the graphs and/or tables below.", fp_text_hightlight)`
+`r run_columnbreak()`
+`r ftext("The text is in two column format for easing the reading.", fp_text_hightlight)`
+<!---BLOCK_MULTICOL_STOP{widths: [`r rep(txt_col_width , 2)`], space: `r inter_col_width`, sep: false}--->
 
-### What are the underlying conditions of these patients?
+```{r}
+# Display graph or table produced in the chunk above
+```
+
+
+### Underlying conditions
 <!-- Frequency and proportions of the number of comorbidities recorded among [confirmed/probable/suspect] patients in MSF facilities -->
 ```{r}
+# Priority +++
 # by Francesco
 
 #[Table of frequency and proportions of [confirmed/probable/suspect] cases cases with 0, 1, 2, 3 or more comorbidities, filtered by OC /country/ project]
 ```
 
+<!---BLOCK_MULTICOL_START--->
+`r ftext("Text comment/interpretation etc. on the graphs and/or tables below.", fp_text_hightlight)`
+`r run_columnbreak()`
+`r ftext("The text is in two column format for easing the reading.", fp_text_hightlight)`
+<!---BLOCK_MULTICOL_STOP{widths: [`r rep(txt_col_width , 2)`], space: `r inter_col_width`, sep: false}--->
 
+```{r}
+# Display graph or table produced in the chunk above
+```
 
-To be completed as appropriate. 
 
 <!-- Frequency and proportions of each recorded comorbidities among [confirmed/probable/suspect] patients in MSF facilities -->
 ```{r}
@@ -398,9 +552,18 @@ To be completed as appropriate.
 
 ```
 
-To be completed as appropriate
+<!---BLOCK_MULTICOL_START--->
+`r ftext("Text comment/interpretation etc. on the graphs and/or tables below.", fp_text_hightlight)`
+`r run_columnbreak()`
+`r ftext("The text is in two column format for easing the reading.", fp_text_hightlight)`
+<!---BLOCK_MULTICOL_STOP{widths: [`r rep(txt_col_width , 2)`], space: `r inter_col_width`, sep: false}--->
 
-### What is the level of care received by these patients?
+```{r}
+# Display graph or table produced in the chunk above
+```
+
+
+### Level of care received
 
 <!-- Number and proportions of the different level of care in admitted [confirmed/probable/suspect] patients in MSF facilities
 To be completed as appropriate -->
@@ -416,13 +579,15 @@ To be completed as appropriate -->
 # by Paul
 
 # [Graph displaying the proportion of cases receiving O2 according to age (continuous) and reporting comorbidity or not, filtered by OC /country/ project]
+# Not sure the graph is a better option
 ```
 
 
-### What are the outcomes of these patients?
+### Patients' outcomes
 
 <!-- Frequency and proportions of each recorded outcome in [confirmed/probable/suspect] patients in MSF facilities, by age groups -->
 ```{r}
+# Priority +++
 # by Francesco
 
 # [Table displaying frequency and proportions of each recorded outcome, by age groups, filtered by OC /country/ project]
@@ -430,21 +595,41 @@ To be completed as appropriate -->
 
 <!-- Case fatality risk in [confirmed/probable/suspect] patients in MSF facilities, by age groups, sex and by project -->
 ```{r}
-# by Francseco
+# Priority +++
+# by Francesco
 
 # [Table displaying the Case Fatality Risk, by age groups, sex and by project, filtered by OC /country/ project]
  
 ```
 
-To be completed as appropriate.
 
-<!-- Case fatality risk in the different age groups among [confirmed/probable/suspect] patients in MSF facilities
-To be completed as appropriate -->
+<!---BLOCK_MULTICOL_START--->
+`r ftext("Text comment/interpretation etc. on the graphs and/or tables below.", fp_text_hightlight)`
+`r run_columnbreak()`
+`r ftext("The text is in two column format for easing the reading.", fp_text_hightlight)`
+<!---BLOCK_MULTICOL_STOP{widths: [`r rep(txt_col_width , 2)`], space: `r inter_col_width`, sep: false}--->
 
+```{r}
+# Display graph or table produced in the chunk above
+```
+
+
+<!-- Case fatality risk in the different age groups among [confirmed/probable/suspect] patients in MSF facilities -->
 ```{r}
 # by Paul
 
 #[Graph displaying the Case Fatality Risk, by age groups, with respective confidence intervals (died and recovered patients), filtered by OC /country/ project]
+```
+
+
+<!---BLOCK_MULTICOL_START--->
+`r ftext("Text comment/interpretation etc. on the graphs and/or tables below.", fp_text_hightlight)`
+`r run_columnbreak()`
+`r ftext("The text is in two column format for easing the reading.", fp_text_hightlight)`
+<!---BLOCK_MULTICOL_STOP{widths: [`r rep(txt_col_width , 2)`], space: `r inter_col_width`, sep: false}--->
+
+```{r}
+# Display graph or table produced in the chunk above
 ```
 
 
@@ -456,14 +641,15 @@ The overall delay from symptoms to consultation/admission in MSF facilities was 
 
 <!-- Weekly distribution of delay from symptoms to consultation/admission of covid19 patients in MSF facilities -->
 ```{r}
+# Priority +++
 # by Paul
 
 #[Box plot displaying distribution of delay from symptoms onset to consultation/admission, aggregated by week, with trend and filtered by OC /country/ project]
 ```
 
-<!-- Weekly distribution of delay from symptoms to consultation/admission of covid19 patients in each of the MSF facilities
-To be completed as appropriate -->
+<!-- Weekly distribution of delay from symptoms to consultation/admission of covid19 patients in each of the MSF facilities -->
 ```{r}
+# Priority ++
 # by Paul
 
 # [Multifacet Box plot displaying distribution of delay from symptoms onset to consultation/admission, aggregated by week, with trend and filtered by OC /country/ project]
@@ -476,6 +662,7 @@ The overall length of stay in MSF facilities was of X days.
 
 <!--  Weekly distribution of length of stay of covid19 patients in MSF facilities -->
 ```{r}
+# Priority +++
 # by Paul
 
 #[Box plot displaying distribution of length of stay for hospitalized patients (all hospitalized and admitted in ICU), aggregated by week, with trend and filtered by OC /country/ project. The last 2 weeks will be excluded due to uncomplete data]
@@ -484,24 +671,33 @@ The overall length of stay in MSF facilities was of X days.
 <!-- Weekly distribution of length of stay of covid19 patients in each of the MSF facilities
 To be completed as appropriate -->
 ```{r}
+# Priority ++
 # by Paul
 
 #[Multifacet Box plot displaying distribution of length of stay, aggregated by week, with trend and filtered by OC /country/ project]
 ```
 
 
-#### Bed occupancy rates
+### Bed occupancy rates
 
 <!-- Bed occupancy rates in the projects reporting, in MSF facilities -->
 
 ```{r}
+# Priority +
 # by Francesco
 
 # [Table displaying bed occupancy rate, aggregated by week, by projects]
 ```
 
 
-To be completed as appropriate. 
+<!---BLOCK_MULTICOL_START--->
+`r ftext("Text comment/interpretation etc. on the graphs and/or tables below.", fp_text_hightlight)`
+`r run_columnbreak()`
+`r ftext("The text is in two column format for easing the reading.", fp_text_hightlight)`
+<!---BLOCK_MULTICOL_STOP{widths: [`r rep(txt_col_width , 2)`], space: `r inter_col_width`, sep: false}--->
 
+```{r}
+# Display graph or table produced in the chunk above
+```
 
 

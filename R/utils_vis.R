@@ -76,9 +76,15 @@ freq_prct <- function(x, value){
 
 # Formatting Confidence Intervals
 combine_ci <- function(lwr, upr, digits = 1) {
-  sprintf(glue("[%.{digits}f - %.{digits}f]"), 
-          round(lwr, digits = digits),
-          round(upr, digits = digits))
+  
+  if (is.na(lwr) & is.na(upr)) {
+    x <- NA
+  } else {
+    x <- sprintf(glue("[%.{digits}f - %.{digits}f]"), 
+                 round(lwr, digits = digits),
+                 round(upr, digits = digits))
+  }
+  return(x)
 }
 
 

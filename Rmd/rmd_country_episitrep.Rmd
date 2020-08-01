@@ -5,6 +5,8 @@ output:
     reference_docx: template_country_episitrep.docx
     tables:
       style: Table Grid
+    lists:
+      ul.style: Description bullet
 editor_options: 
   chunk_output_type: console
 ---
@@ -141,23 +143,30 @@ This report was compiled by `r ftext("[to be precised]", fp_text_hightlight)`, w
 <!---BLOCK_MULTICOL_START--->
 __Data sources__
 
--	[ECDC data](https://opendata.ecdc.europa.eu/covid19/casedistribution/csv) last updated [01 Jul 2020] `r fp_par_no_padding`
--	MSF linelists compiled by Epicentre `r fp_par_no_padding`
--	MSF [GIS Unit](https://mapcentre.msf.org/) (baseline country maps) `r fp_par_no_padding`
--	[FIND Diagnostics resource centre unit](https://www.finddx.org/covid-19/) for data on Covid-19 tests `r fp_par_no_padding`
+::: {custom-style="Description"}
+\-  [ECDC data](https://opendata.ecdc.europa.eu/covid19/casedistribution/csv) last updated [01 Jul 2020] `r fp_par_no_padding`  
+\-  MSF linelists compiled by Epicentre `r fp_par_no_padding`  
+\-  MSF [GIS Unit](https://mapcentre.msf.org/) (baseline country maps) `r fp_par_no_padding`  
+\-  [FIND Diagnostics resource centre unit](https://www.finddx.org/covid-19/) for data on Covid-19 tests `r fp_par_no_padding`  
+:::
 
 `r run_columnbreak()`
 __Definitions and analysis methods__
 
+::: {custom-style="Description"}
 Definitions of increasing, declining and stable trends and the definition of doubling time, as well as detailed information on the analysis methods can be found [here](https://msfintl-my.sharepoint.com/:u:/g/personal/francesco_grandesso_epicentre_msf_org/EZqExKcP8axMj06voaLlveABpiicCfzkk5OWB-EaJvo9Fw?e=lwU1eM).`r fp_par_no_padding`
+:::
 
 `r run_columnbreak()`
 __Useful links__
 
-- [MSF Covid-19 Information Hub](https://msfintl.sharepoint.com/sites/msfintlcommunities/Covid-19/SitePages/Home.aspx)`r fp_par_no_padding`
-- [MSF activities on Covid-19](https://msfintl.sharepoint.com/sites/msfintlcommunities/Covid-19/MSF Updates/COVID-19 MSF Updates/)`r fp_par_no_padding`
-- [Literature review by INSERM](https://reacting.inserm.fr/literature-review/)`r fp_par_no_padding`
-- [Epicentre Covid19 blog](https://msfintl.sharepoint.com/sites/grp-epi-proj-ncov/SitePages/About.aspx)`r fp_par_no_padding`
+::: {custom-style="Description"}
+\-  [MSF Covid-19 Information Hub](https://msfintl.sharepoint.com/sites/msfintlcommunities/Covid-19/SitePages/Home.aspx)`r fp_par_no_padding`  
+\-  [MSF activities on Covid-19](https://msfintl.sharepoint.com/sites/msfintlcommunities/Covid-19/MSF Updates/COVID-19 MSF Updates/)`r fp_par_no_padding`  
+\-  [Literature review by INSERM](https://reacting.inserm.fr/literature-review/)`r fp_par_no_padding`  
+\-  [Epicentre Covid19 blog](https://msfintl.sharepoint.com/sites/grp-epi-proj-ncov/SitePages/About.aspx)`r fp_par_no_padding`  
+:::
+
 <!---BLOCK_MULTICOL_STOP{widths: [`r rep(txt_col_width * 2/3, 3)`], space: `r inter_col_width/2`, sep: false}--->
 
 ---

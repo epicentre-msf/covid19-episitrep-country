@@ -11,14 +11,18 @@ editor_options:
 
 ```{r setup, include=FALSE}
 
-knitr::opts_chunk$set(echo = FALSE, fig.cap = TRUE)
+knitr::opts_chunk$set(echo = FALSE, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      fig.cap = TRUE)
 
 # Set environment
 source(here::here('R', 'setup.r'), encoding = 'UTF-8')
 
 source(file.path(path.R, "utils_management.R"), encoding = "UTF-8")
-source(file.path(path.R, "utils_vis.R")       , encoding = "UTF-8")
 source(file.path(path.R, "utils_get_data.R")  , encoding = "UTF-8")
+source(file.path(path.R, "utils_modelling.R") , encoding = "UTF-8")
+source(file.path(path.R, "utils_vis.R")       , encoding = "UTF-8")
 
 ```
 
@@ -28,7 +32,7 @@ source(file.path(path.R, "utils_get_data.R")  , encoding = "UTF-8")
 # Get list of countries (with pop)
 df_countries <- get_countries_list()
 
-iso_country <- 'AFG'
+iso_country <- 'USA'
 
 name_country <- df_countries %>% 
   filter(iso_a3 == iso_country) %>% 
@@ -176,13 +180,23 @@ From this point all pairs of chunks are to be independent from each others
 ```{r, include=FALSE}
 # Priority +++
 # by Francesco
-# make the graph here
 
-# [Multiplot graphs for each country, displaying: 1. Epidemiological curve in daily cases, 2. Cases in the last 12 days, associated trend and confidence interval, 3. Epidemiological curve in daily deaths and 4. Deaths in the last 12 days, associated trend and confidence interval]
+# Six-plots graphs displaying: 
 
-dta_ecdc <- dta_ecdc %>% filter(iso_a3 == iso_country)
+# 1. Epidemiological curve in daily cases (above) and deaths (below) since the first case was reported in the country
+# 2. Cases (above) and deaths (below) in the last 30 days, with associated trend and confidence interval
+# 3. Cases (above) and deaths (below) in the last 12 days, with associated trend and confidence interval
 
+mdl_trend_cases_12d <- linear_model_cnt(dta_ecdc, series = 'cases', time_window = 12, last_date = date_max_report)
+mdl_trend_cases_30d <- linear_model_cnt(dta_ecdc, series = 'cases', time_window = 30, last_date = date_max_report)
+mdl_trend_deaths_12d <- linear_model_cnt(dta_ecdc, series = 'deaths', time_window = 12, last_date = date_max_report)
+mdl_trend_deaths_30d <- linear_model_cnt(dta_ecdc, series = 'deaths', time_window = 30, last_date = date_max_report)
 
+multiplot_counts_trends <- country_six_plots(dta = dta_ecdc, 
+                                             mdl1_cases = mdl_trend_cases_30d, 
+                                             mdl2_cases = mdl_trend_cases_12d, 
+                                             mdl1_deaths = mdl_trend_deaths_30d, 
+                                             mdl2_deaths = mdl_trend_deaths_12d)
 
 ``` 
 
@@ -192,14 +206,121 @@ dta_ecdc <- dta_ecdc %>% filter(iso_a3 == iso_country)
 # by Francesco
 
 # Table displaying: 
+
 # - cumulative case and deaths counts (since the beginning and in the last 12 days), 
 # - cumulative incidence in cases and deaths per 100,000 population, 
 # - naïve Case Fatality Risk, 
 # - trend in cases and deaths and associated confidence intervals]. 
 
-# Or have a different appropriate table with AR, doubling time as well?
+# Multiplying factors
+pop_tot = dta_ecdc %>% distinct(population_2019) %>% pull()
+inc_factor <- 100000
+
+# Tables cases and deaths and cumulative incidence
+tbl_tot <- dta_ecdc %>% 
+  summarise(
+    cases = sum(cases, na.rm = TRUE),
+    deaths = sum(deaths, na.rm = TRUE),
+    cases_inc = cases/pop_tot  * inc_factor, 
+    deaths_inc = deaths/pop_tot * inc_factor) %>% 
+  mutate(period = 'Total')
+
+tbl_30days <- dta_ecdc %>% 
+  filter(between(date, left = date_max_report - 29, right = date_max_report)) %>% 
+  summarise(
+    cases = sum(cases, na.rm = TRUE),
+    deaths = sum(deaths, na.rm = TRUE),
+    cases_inc = cases/(pop_tot - tbl_tot$cases + cases) * inc_factor, 
+    deaths_inc = deaths/(pop_tot - tbl_tot$deaths + deaths) * inc_factor) %>% 
+  mutate(period = 'Last 30 days')
+
+tbl_12days <- dta_ecdc %>% 
+  filter(between(date, left = date_max_report - 11, right = date_max_report)) %>% 
+  summarise(
+    cases = sum(cases, na.rm = TRUE),
+    deaths = sum(deaths, na.rm = TRUE),
+    cases_inc = cases/(pop_tot - tbl_tot$cases + cases) * inc_factor, 
+    deaths_inc = deaths/(pop_tot - tbl_tot$deaths + deaths) * inc_factor) %>% 
+  mutate(period = 'Last 12 days')
+
+# Table doubling time
+doubling_cases_30d <- doubling_time(mdl_trend_cases_30d$coeffs) %>% 
+  rename_all(~paste(., 'cases', sep = '_'))
+
+doubling_cases_12d <- doubling_time(mdl_trend_cases_12d$coeffs) %>% 
+  rename_all(~paste(., 'cases', sep = '_'))
+
+doubling_deaths_30d <- doubling_time(mdl_trend_deaths_30d$coeffs) %>% 
+  rename_all(~paste(., 'deaths', sep = '_'))
+
+doubling_deaths_12d <- doubling_time(mdl_trend_deaths_12d$coeffs) %>% 
+  rename_all(~paste(., 'deaths', sep = '_'))
+
+doubling_30d <- cbind(doubling_cases_30d, doubling_deaths_30d) %>% 
+  mutate(
+    period = 'Last 30 days', 
+    ci_cases = combine_ci(lwr_cases, upr_cases), 
+    ci_deaths = combine_ci(lwr_deaths, upr_deaths)) %>% 
+  select(period, est_cases, ci_cases, est_deaths, ci_deaths)
+
+doubling_12d <- cbind(doubling_cases_12d, doubling_deaths_12d) %>% 
+  mutate(
+    period = 'Last 12 days', 
+    ci_cases = combine_ci(lwr_cases, upr_cases), 
+    ci_deaths = combine_ci(lwr_deaths, upr_deaths)) %>% 
+  select(period, est_cases, ci_cases, est_deaths, ci_deaths)
+
+doubling <- rbind(doubling_30d, doubling_12d)
+
+# Compose the final table
+tbl_summary_country <- rbind(tbl_tot, tbl_30days, tbl_12days) %>% 
+  mutate(cfr = deaths / cases * 100) %>% 
+  left_join(doubling)
+
+# Edit flextable
+ftbl_summary_country <- tbl_summary_country %>% 
+  flextable(col_keys = c('period', 'cases', 'deaths', 'cfr', 'ec1', 'cases_inc', 'deaths_inc', 'ec2', 'est_cases','ci_cases', 'ec3',  'est_deaths', 'ci_deaths')) %>% 
+  set_header_labels(period = 'Period',
+                    cases = 'Counts', 
+                    deaths = 'Counts', 
+                    cfr = '', 
+                    ec1 = '', 
+                    cases_inc  = 'Cumulative Incidence per 100,000', 
+                    deaths_inc = 'Cumulative Incidence per 100,000', 
+                    ec2 = '', 
+                    est_cases = 'Doubling time in cases', 
+                    ci_cases  = 'Doubling time in cases', 
+                    ec3 = '', 
+                    est_deaths = 'Doubling time in deaths', 
+                    ci_deaths  = 'Doubling time in deaths') %>% 
+  colformat_num(j = c('cases', 'deaths', 'cases_inc', 'deaths_inc'), 
+                digits = 0) %>% 
+  colformat_num(j = c('cfr', 'est_cases', 'est_deaths'), 
+                digits = 1) %>% 
+  colformat_num(j = c('est_cases', 'est_deaths'), 
+                digits = 1, 
+                na_str = "---") %>% 
+  colformat_char(j = c('ci_cases', 'ci_deaths'), 
+                na_str = "---") %>% 
+  merge_at(i = 1, j = 2:3, part = 'header') %>% 
+  merge_at(i = 1, j = 6:7, part = 'header') %>% 
+  merge_at(i = 1, j = 9:10, part = 'header') %>% 
+  merge_at(i = 1, j = 12:13, part = 'header') %>% 
+  add_header_row(values = c('', 'Cases', 'Deaths', 'naive CFR', '', 'Cases', 'Deaths', '', 'Days', '[95% CI]', '', 'Days', '[95% CI]'), top = FALSE) %>% 
+  theme_alafoli() %>% 
+  hline(j = c(2:3, 6:7, 9:10, 12:13), border = fp_border(width = 1), part = "header") %>% 
+  hline_top(border = fp_border(width = 1), part = "header") %>%
+  hline_bottom(border = fp_border(width = 1), part = "body") %>% 
+  fix_border_issues() %>% 
+  fit_to_width(max_width = 14 * cm_to_in) %>% 
+  autofit()
+
+
+ftbl_summary_country 
+
 
 ```
+
 
 <!---BLOCK_MULTICOL_START--->
 Considering ECDC data, `r name_country` reported an **`r ftext("[increasing/stable/decreasing]", fp_text_hightlight)` trend in covid19 cases** and an **`r ftext("[increasing/stable/decreasing]", fp_text_hightlight)` trend in deaths** in the last 12 days**. Last week, reported trend in covid19 cases was `r ftext("[increasing/stable/decreasing]", fp_text_hightlight)` and reported trend in covid19 deaths was `r ftext("[increasing/stable/decreasing]", fp_text_hightlight)`. 
@@ -211,19 +332,17 @@ As of `r ftext("28th June 2020, the attack rate in cases was of [xx%] and the at
 
 <!---BLOCK_MULTICOL_STOP{widths: [`r rep(txt_col_width , 2)`], space: `r inter_col_width`, sep: false}--->
 
-```{r plot-epicurve}
-# display the graph or table here
+```{r plot-epicurve, fig.width=18*cm_to_in, fig.cap=paste('Covid-19 cases and deaths and trend estimations in', name_country), dpi=300}
+
+multiplot_counts_trends + plot_annotation(title = "")
+
 ```
 
-The gt table should appear here below
 
-```{r table-summary-epidemic}
-# display the graph or table here
-dta_ecdc %>% 
-  count(continent) %>% 
-  flextable::flextable() %>% 
-  flextable::autofit()
 
+```{r table-summary-country}
+
+ftbl_summary_country
 
 ```
 

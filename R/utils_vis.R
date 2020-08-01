@@ -74,57 +74,15 @@ freq_prct <- function(x, value){
 
 
 
-call_countries_with <- function(dta, left = -Inf, right = Inf, series){
-  
-  series <- sym(series)
-  
-  dta %>% 
-    filter(between(!!series, left = left, right =  right)) %>% 
-    arrange(desc(!!series)) %>% 
-    pull(country)
+# Formatting Confidence Intervals
+combine_ci <- function(lwr, upr, digits = 1) {
+  sprintf(glue("[%.{digits}f - %.{digits}f]"), 
+          round(lwr, digits = digits),
+          round(upr, digits = digits))
 }
 
 
 
-
-call_countries_increasing <- function(obs, continent_name = NULL){
-  
-  selected_tbl <- switch(obs, 
-                         cases  = tbl_cases_increasing_trend, 
-                         deaths = tbl_deaths_increasing_trend)
-  
-  if (!is.null(continent_name)) {
-    selected_tbl <- filter(selected_tbl, continent %in% continent_name)
-  }
-  
-  selected_tbl <- arrange(selected_tbl, desc(coeff))
-  
-  called_countries <- pull(selected_tbl, 'country')
-  
-  return(called_countries)
-  
-}
-
-
-
-call_countries_doubling <- function(est, continent_name = NULL, threshold = threshold_doubling_time){
-  
-  est <- sym(est)
-  
-  if (!is.null(continent_name)) {
-    selected_tbl <- filter(tbl_cfr_doubling_rank, continent %in% continent_name)
-  } else {
-    selected_tbl <- tbl_cfr_doubling_rank
-  }
-  
-  selected_tbl <- filter(selected_tbl, !!est < threshold)
-  selected_tbl <- arrange(selected_tbl, desc(!!est))
-  
-  called_countries <- pull(selected_tbl, 'country')
-  
-  return(called_countries)
-  
-}
 
 
 
@@ -191,193 +149,35 @@ plot_map_world_count <- function(tbl_dta, series){
 
 
 
-
-plot_map_world_trend <- function(tbl_dta, series, model_for_trends = 'linear', plot_palette = RdAmGn){
-  
-  RdAmGn <- c('#D95F02', '#E6AB02', '#1B9E77') # Three-colours palette (Red-Amber-Green) colour-blind safe
-  
-  legend_title <- switch(series, 
-                         cases  = 'Trends of cases count', 
-                         deaths = 'Trends of deaths count')
-  
-  plot_title <- switch(series, 
-                       cases  = 'Trends in cases', 
-                       deaths = 'Trends in deaths')
-  
-  series <- sym(series)
-  
-  sf_dta <- tbl_dta %>% 
-    select(c(iso_a3 : !!series), all_of(vars_trends(model_for_trends))) %>% 
-    inner_join(
-      select(sf_world, iso_a3),
-      by = "iso_a3"
-    ) %>% 
-    st_as_sf()
-  
-  labels <- sf_dta %>% as_tibble() %>% pull(trend) %>% levels()
-  
-  plot_map <- ggplot(sf_dta) + 
-    geom_sf(aes(fill = trend), size = .1, alpha = 0.8) + 
-    scale_fill_manual(
-      name = legend_title, 
-      values = plot_palette, 
-      drop = FALSE, 
-      guide = guide_legend(
-        keyheight = unit(3, units = "mm"),
-        keywidth = unit(50 / length(labels), units = "mm"),
-        title.hjust = 0.5,
-        nrow = 1,
-        label.position = "bottom",
-        title.position = 'top')) +
-    labs(title = plot_title, caption = caption_world_map) +
-    theme_minimal() +
-    theme(plot.title = element_text(hjust = 0.5), legend.position = "bottom")
-  
-  return(plot_map)
-  
-}
-
-
-
-country_plot <- function(country_iso, series, lst_dta = lst_ecdc, model = 'linear', date_min = NULL) {
-  
-  choice <- paste(series, model, sep = '_')
-  
-  mld_list <- switch(choice, 
-                     cases_linear   = model_cnt_cases_linear, 
-                     deaths_linear  = model_cnt_deaths_linear, 
-                     cases_poisson  = model_cnt_cases_poisson, 
-                     deaths_poisson = model_cnt_deaths_poisson)
-
-  mld_par <- mld_list[[5]]
-  dates_extent <- c(mld_par[[1]][1], mld_par[[1]][2])
-  
-  mdl <- mld_list[[2]][[country_iso]]
-  
-  dta_obs <- lst_dta[[country_iso]] %>% 
-    select(date, obs = all_of(series))
-  
-  dta_mdl <- tibble(dta_obs %>% 
-                          filter(between(date, 
-                                         left = dates_extent[1],  
-                                         right = dates_extent[2])), 
-                        fit = mdl$fit, 
-                        lwr = mdl$lwr, 
-                        upr = mdl$upr)
-  
-  obs_max <- max(dta_obs$obs, na.rm = TRUE)
-  
-  if (is.null(date_min)) {
-    date_min <- dta_obs %>% filter(obs != 0) %>% pull(date) %>% min()
-  }
-  
-  main_colour <- switch(series, 
-                        cases  = '#1A62A3',
-                        deaths = '#e10000')
-  
-  # The complete epicurve
-  plot_obs <- ggplot(dta_obs, aes(x = date, y = obs)) + 
-    geom_col(colour = main_colour, fill = main_colour) + 
-    scale_x_date(limits = c(date_min, NA)) + 
-    xlab('') + 
-    ylab(series) + 
-    labs(subtitle = 'Since the first cases reported') + 
-    theme_light()
-  
-  # The model
-  plot_mdl <- ggplot(dta_mdl, aes(x = date, y = obs)) + 
-    geom_point(size = 2 , colour = main_colour) + 
-    geom_line(aes(y = fit), colour = main_colour, size = 1) + 
-    geom_ribbon(aes(ymin = lwr, ymax = upr), fill = main_colour, alpha = 0.4) + 
-    xlab('') + 
-    ylab(paste0(series, '/ fitted values')) + 
-    labs(subtitle = paste('Last', length(dta_mdl$obs), 'days')) + 
-    theme_light() 
-  
-  # List the plots
-  return(list(plot_obs, plot_mdl, model = model))
-  
-}
-
-
-
-# Plot cases or deaths for a single country with a zoom in the last 12 days -->
-country_duo_plots <- function(series, country_iso, lst_dta = lst_ecdc, model = 'linear') {
-  
-  name_country <- df_countries %>% filter(iso_a3 == country_iso) %>% pull(country)
-  
-  grid.arrange(country_plot(country_iso = country_iso, series = series, model = model)[[1]], 
-               country_plot(country_iso = country_iso, series = series, model = model)[[2]],
-             ncol = 2, 
-             top = textGrob(paste(glue('Covid-19 cases and deaths and trend estimations in {name_country}'), 
-                                  glue('Data until {format(date_max_report, "%d %B %Y")}'), 
-                                  sep = "\n"), 
-                            gp = gpar(fontface = 'bold')))
-}
-
-
-
 # To plot both cases and deaths into a single graphic plot
-country_six_plots <- function(dta) {
-  
-  lst_dta <- lst_ecdc
+country_six_plots <- function(dta, mdl1_cases, mdl2_cases, mdl1_deaths, mdl2_deaths) {
   
   # Parameters
-  main_colour  <- c(cases = '#1A62A3', deaths = '#e10000')
-  name_country <- df_countries %>% filter(iso_a3 == country_iso) %>% pull(country)
-  date_min     <- lst_dta[[country_iso]] %>% filter(cases != 0) %>% pull(date) %>% min()
+  country_id  <- dta %>% distinct(iso_a3, country)
+  main_colour <- c(cases = '#1A62A3', deaths = '#e10000')
+  date_min    <- dta %>% filter(cases != 0) %>% pull(date) %>% min()
+  model_name <- mdl1_cases$par$model_name
   
   # Table observations
-  dta_obs <- lst_dta[[country_iso]] %>% 
+  dta_obs <- dta %>% 
     select(date, cases, deaths) %>% 
     pivot_longer(-date, names_to = 'obs', values_to = 'count')
   
   
-  # Table predictions
-  mdl_cases_12d  <- model_cnt_cases_linear
-  mdl_cases_30d  <- model_cnt_cases_linear_30d
-  mdl_deaths_12d <- model_cnt_deaths_linear
-  mdl_deaths_30d <- model_cnt_deaths_linear_30d
-  
-  mld_par_12d <- mdl_cases_12d$par
-  dates_extent_12d <- c(mld_par_12d[[1]][1], mld_par_12d[[1]][2])
-  
-  mld_par_30d <- mdl_cases_30d$par
-  dates_extent_30d <- c(mld_par_30d[[1]][1], mld_par_30d[[1]][2])
+  # Models plot extents
+  mdl1_dates_extent <- mdl1_cases$par$time_unit_sourced
+  mdl2_dates_extent <- mdl2_cases$par$time_unit_sourced
   
   
-  dta_cases_12d <- lst_dta[[country_iso]] %>% 
-    select(date, count = cases) %>% 
-    mutate(
-      obs = 'cases') %>% 
-    filter(between(date, dates_extent_12d[1], dates_extent_12d[2])) %>% 
-    tibble::add_column(mdl_cases_12d[['preds']][[country_iso]])
+  # Models tables
+  mdl1_cases_dta <-  mdl1_cases$preds %>% mutate(obs = 'cases') %>% rename(n = cases)
+  mdl2_cases_dta <-  mdl2_cases$preds %>% mutate(obs = 'cases') %>% rename(n = cases)
+  mdl1_deaths_dta <- mdl1_deaths$preds %>% mutate(obs = 'deaths') %>% rename(n = deaths)
+  mdl2_deaths_dta <- mdl2_deaths$preds %>% mutate(obs = 'deaths') %>% rename(n = deaths)
   
-  dta_cases_30d <- lst_dta[[country_iso]] %>% 
-    select(date, count = cases) %>% 
-    mutate(
-      obs = 'cases') %>% 
-    filter(between(date, dates_extent_30d[1], dates_extent_30d[2])) %>% 
-    tibble::add_column(mdl_cases_30d[['preds']][[country_iso]])
-  
-  dta_deaths_12d <- lst_dta[[country_iso]] %>% 
-    select(date, count = deaths) %>% 
-    mutate(
-      obs = 'deaths') %>% 
-    filter(between(date, dates_extent_12d[1], dates_extent_12d[2])) %>% 
-    tibble::add_column(mdl_deaths_12d[['preds']][[country_iso]]) 
-  
-  dta_deaths_30d <- lst_dta[[country_iso]] %>% 
-    select(date, count = deaths) %>% 
-    mutate(
-      obs = 'deaths') %>% 
-    filter(between(date, dates_extent_30d[1], dates_extent_30d[2])) %>% 
-    tibble::add_column(mdl_deaths_30d[['preds']][[country_iso]]) 
-  
-  
-  dta_mld_12d <- rbind(dta_cases_12d, dta_deaths_12d)
-  dta_mld_30d <- rbind(dta_cases_30d, dta_deaths_30d)
-  
+  mdl1_dta <- rbind(mdl1_cases_dta, mdl1_deaths_dta)
+  mdl2_dta <- rbind(mdl2_cases_dta, mdl2_deaths_dta)
+
   
   # Plots
   plot_obs <- ggplot(dta_obs, aes(x = date, y = count)) + 
@@ -393,53 +193,48 @@ country_six_plots <- function(dta) {
     theme(legend.position = "none", 
           strip.text = element_text(size = 11))
   
-  
-  plot_mdl_30d <- ggplot(dta_mld_30d, aes(x = date, y = count)) + 
+  plot_mdl1 <- ggplot(mdl1_dta, aes(x = date, y = n)) + 
     facet_wrap(~ obs, scales = "free_y", ncol = 1) + 
     geom_point(aes(colour = obs), size = 2) + 
     scale_colour_manual(values = main_colour) + 
     geom_ribbon(aes(ymin = lwr, ymax = upr, fill = obs), alpha = 0.4) + 
     geom_line(aes(y = fit, colour = obs), size = 1) + 
     scale_fill_manual(values = main_colour) + 
-    scale_x_date(limits = dates_extent_30d, date_labels = "%d-%b") +
+    scale_x_date(limits = mdl1_dates_extent, date_labels = "%d-%b") +
     xlab('') + 
     ylab(paste0('frequency and fitted values')) + 
-    labs(subtitle = paste('Last', (dates_extent_30d[[2]] - dates_extent_30d[[1]] + 1), 'days')) + 
+    labs(subtitle = paste('Last', (mdl1_dates_extent[[2]] - mdl1_dates_extent[[1]] + 1), 'days')) + 
     theme_light() + 
     theme_light() + 
     theme(legend.position = "none", 
           strip.text = element_text(size = 11))
   
-  
-  plot_mdl_12d <- ggplot(dta_mld_12d, aes(x = date, y = count)) + 
+  plot_mdl2 <- ggplot(mdl2_dta, aes(x = date, y = n)) + 
     facet_wrap(~ obs, scales = "free_y", ncol = 1) + 
     geom_point(aes(colour = obs), size = 2) + 
     scale_colour_manual(values = main_colour) + 
     geom_ribbon(aes(ymin = lwr, ymax = upr, fill = obs), alpha = 0.4) + 
     geom_line(aes(y = fit, colour = obs), size = 1) + 
     scale_fill_manual(values = main_colour) + 
-    scale_x_date(limits = dates_extent_12d, breaks = '4 days', date_labels = "%d-%b") +
+    scale_x_date(limits = mdl2_dates_extent, breaks = '4 days', date_labels = "%d-%b") +
     xlab('') + 
     ylab(paste0('frequency and fitted values')) + 
-    labs(subtitle = paste('Last', (dates_extent_12d[[2]] - dates_extent_12d[[1]] + 1), 'days')) + 
+    labs(subtitle = paste('Last', (mdl2_dates_extent[[2]] - mdl2_dates_extent[[1]] + 1), 'days')) + 
     theme_light() + 
     theme_light() + 
     theme(legend.position = "none", 
           strip.text = element_text(size = 11))
   
-  
-  
-  ggarrange(plot_obs, 
-            plot_mdl_30d, 
-            plot_mdl_12d, 
-            ncol = 3, 
-            widths = c(2,1.4,1.1)) %>% 
-    
-    annotate_figure(top = text_grob(paste(glue('Covid-19 cases and deaths and trend estimations in {name_country}'), 
-                                          glue('Data until {format(date_max_report, "%d %B %Y")} (fitting with linear regression model)'), 
-                                          sep = "\n"), 
-                                    face = "bold", size = 14))
+  # Arrange plots
+  plot_obs + 
+    plot_mdl1 + 
+    plot_mdl2 + 
+    plot_layout(ncol = 3, widths = c(2, 1.4, 1.1)) +
+    plot_annotation(title = paste('Covid-19 cases and deaths and trend estimations in', country_id$country),
+                    caption = paste('Fitting using a', model_name))
+
 }
+
 
 
 

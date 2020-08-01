@@ -1,28 +1,5 @@
 
 
-# Set the term of dates this is also used to separate output files
-set_date_max <- function(date_max, get_updated_data = FALSE){
-  
-  get_updated_data <- get_updated_data
-  
-  date_max <- as.Date(date_max)
-
-  # Create folders speficit to date_max
-  path.local.day    <- file.path(path.local, date_max)
-  path.local.data   <- file.path(path.local.day, 'data')
-  path.local.graphs <- file.path(path.local.day, 'graphs')
-  path.local.tables <- file.path(path.local.day, 'tables')
-
-  dir.create(path.local.day    , showWarnings = FALSE, recursive = TRUE) 
-  dir.create(path.local.data   , showWarnings = FALSE, recursive = TRUE) 
-  dir.create(path.local.graphs , showWarnings = FALSE, recursive = TRUE) 
-  dir.create(path.local.tables , showWarnings = FALSE, recursive = TRUE) 
-  
-  return((date_max))
-
-}
-
-
 # set date to the Monday of the ISO week
 make_epiweek_date <- function(date) {
   lubridate::wday(date, week_start = 1) <- 1
@@ -37,13 +14,6 @@ max_2 <- function(x) {
   c(nth(x, n-1), nth(x, n))
 }
 
-
-# Formatting Confidence Intervals
-combine_ci <- function(lwr, upr, digits = 1) {
-  sprintf(glue("[%.{digits}f - %.{digits}f]"), 
-        round(lwr, digits = digits),
-        round(upr, digits = digits))
-}
 
 
 format_ci <- function(tbl) {

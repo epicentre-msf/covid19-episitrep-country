@@ -101,12 +101,14 @@ get_msf_country_linelist <- function(path, iso_country, update_data = FALSE) {
       age_group = cut(age_in_years, breaks = age_cut, labels = age_labs, right = FALSE, include.lowest = TRUE),
       age_group = forcats::fct_explicit_na(age_group, na_level = "Unknown"),
       patcourse_presHCF = lubridate::as_date(patcourse_presHCF),
-      outcome_patcourse_presHCF = lubridate::as_date(outcome_patcourse_presHCF)
+      outcome_patcourse_presHCF = lubridate::as_date(outcome_patcourse_presHCF),
+      epi_week_consultation = lubridate::floor_date(lubridate::as_date(MSF_date_consultation), "week", week_start = 1)
     ) %>% 
     mutate_at(vars(contains("date")), lubridate::as_date) %>% 
     tidyr::replace_na(list(
       patinfo_sex = "Unknown",
       MSF_covid_status = "Unknown",
+      patcourse_admit = "Unknown",
       outcome_patcourse_status = "Unknown",
       MSF_visit_type = "Unknown",
       age_in_years = "Unknown"

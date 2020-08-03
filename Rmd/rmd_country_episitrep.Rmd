@@ -6,7 +6,8 @@ output:
     tables:
       style: Table Grid
     lists:
-      ul.style: Description bullet
+      ol.style: Descriptionbullet
+      ul.style: Descriptionbullet
 editor_options: 
   chunk_output_type: console
 ---
@@ -18,9 +19,10 @@ knitr::opts_chunk$set(echo = FALSE, fig.cap = TRUE)
 # Set environment
 source(here::here('R', 'setup.r'), encoding = 'UTF-8')
 
+source(file.path(path.R, "utils_get_data.R")  , encoding = "UTF-8")
 source(file.path(path.R, "utils_management.R"), encoding = "UTF-8")
 source(file.path(path.R, "utils_vis.R")       , encoding = "UTF-8")
-source(file.path(path.R, "utils_get_data.R")  , encoding = "UTF-8")
+source(file.path(path.R, "utils_epicurve.R")  , encoding = "UTF-8")
 
 ```
 
@@ -260,9 +262,12 @@ This section of the report analyses data reported by MSF in the reporting system
 `r run_columnbreak()`
 **Epicentre dashboard for covid19 linelist data**
 
-- Go to this url to sign up with your MSF email address
-- Then consult the dashboard here
-- Navigate and use filters to display Linelist data of your interest
+::: {custom-style="Description"}
+\- Go to this url to sign up with your MSF email address
+\- Then consult the dashboard here
+\- Navigate and use filters to display Linelist data of your interest
+:::
+
 <!---BLOCK_MULTICOL_STOP{widths: [`r rep(txt_col_width , 2)`], space: `r inter_col_width`, sep: false}--->
 
 ---
@@ -295,8 +300,30 @@ Overall, `r ftext("X", fp_text_hightlight)` patients were consulted/admitted in 
 <!-- Figure 2 - Weekly evolution of patient intake by covid status in country projects -->
 ```{r}
 # By Paul
+missing_consultation <- sum(is.na(dta_msf_linelist$epi_week_consultation))
+missing_status    <- sum(dta_msf_linelist$MSF_covid_status == "Unknown")
 
 # Histograms of number of patients consulted/admitted weekly in MSF facilities, filtered on OC/country/project, displayed by date of consultation and broken down by covid status
+hist_epicurve_status <- dta_msf_linelist %>% 
+  plot_epicurve(
+    date_col = epi_week_consultation, 
+    group_col = MSF_covid_status,
+    floor_date_week = FALSE, 
+    sec_date_axis = TRUE,
+    date_lab = "Week of Consultation", 
+    y_lab = "Patients",
+    group_lab = "Status"
+  ) +
+  labs(caption = glue::glue("Missing data: Consultation Date {missing_consultation}, Status: {missing_status}"))
+
+ggsave(file.path(path.local.msf.graphs, paste0('hist_epicurve_consult_admit', '_', week_report, '.png')),
+       plot = hist_epicurve_status, 
+       width = 6, 
+       height = 4, 
+       scale = 1.1,
+       dpi = 320)
+
+hist_epicurve_status
 ```
 
 <!-- Figure 3 - Weekly evolution of patient intake by covid status in each of the country projects -->
@@ -304,6 +331,29 @@ Overall, `r ftext("X", fp_text_hightlight)` patients were consulted/admitted in 
 # By Paul 
 
 # Multifacet Histograms of number of patients consulted/admitted weekly for each MSF facility, filtered on OC/country/project, displayed by date of consultation and broken down by covid status]
+
+hist_epicurve_status <- dta_msf_linelist %>% 
+  plot_epicurve(
+    date_col = epi_week_consultation, 
+    group_col = MSF_covid_status,
+    facet_col = site_name,
+    floor_date_week = FALSE, 
+    sec_date_axis = TRUE,
+    date_lab = "Week of Consultation", 
+    y_lab = "Patients",
+    group_lab = "Status"
+  ) +
+  labs(caption = glue::glue("Missing data: Consultation Date {missing_consultation}, Status: {missing_status}"))
+
+ggsave(file.path(path.local.msf.graphs, paste0('hist_epicurve_consult_admit', '_', week_report, '.png')),
+       plot = hist_epicurve_status, 
+       width = 6, 
+       height = 4, 
+       scale = 1.1,
+       dpi = 320)
+
+hist_epicurve_status
+
 ```
 
 <!---BLOCK_MULTICOL_START--->
@@ -351,6 +401,37 @@ Overall, `r ftext("X", fp_text_hightlight)` patients were admitted in MSF facili
 # by Paul
 
 # Histogram of number of consultation/admissions aggregated by week, broken down by admission status (consultation or admission), + curve displaying proportion of admitted, filtered by OC/ country/ project
+
+missing_consultation <- sum(is.na(dta_msf_linelist$epi_week_consultation))
+missing_admission    <- sum(dta_msf_linelist$patcourse_admit == "Unknown")
+
+# Histograms of number of patients consulted/admitted weekly in MSF facilities, filtered on OC/country/project, displayed by date of consultation and broken down by covid status
+hist_epicurve_consult_admit <- dta_msf_linelist %>% 
+  filter(patcourse_admit != "Unknown") %>% 
+  mutate(patcourse_admit = recode(patcourse_admit, "Yes" = "Admitted", "No" = "Not Admitted")) %>% 
+  plot_epicurve(
+    date_col = epi_week_consultation, 
+    group_col = patcourse_admit,
+    prop_col = patcourse_admit,
+    prop_numer = "Admitted",
+    prop_denom = c("Admitted", "Not Admitted"),
+    floor_date_week = FALSE, 
+    sec_date_axis = TRUE,
+    date_lab = "Week of Consultation", 
+    y_lab = "Patients",
+    group_lab = "Consultation",
+    prop_lab = "Admitted"
+  ) +
+  labs(caption = glue::glue("Missing data: Consultation Date {missing_consultation}, Admission: {missing_admission}"))
+
+ggsave(file.path(path.local.msf.graphs, paste0('hist_epicurve_consult_admit', '_', week_report, '.png')),
+       plot = hist_epicurve_consult_admit, 
+       width = 6, 
+       height = 4, 
+       scale = 1.1,
+       dpi = 320)
+
+hist_epicurve_consult_admit
 ```
 
 <!-- Figure 6 - Weekly evolution of patient intake by covid status in each of the country projects -->
@@ -359,6 +440,34 @@ Overall, `r ftext("X", fp_text_hightlight)` patients were admitted in MSF facili
 # by Paul
 
 #Multifacet Histogram of number of consultation/admissions aggregated by week for each MSF project, broken down by admission status (consultation or admission), + curve displaying proportion of admitted
+
+hist_epicurve_consult_admit_site <- dta_msf_linelist %>% 
+  filter(patcourse_admit != "Unknown") %>% 
+  mutate(patcourse_admit = recode(patcourse_admit, "Yes" = "Admitted", "No" = "Not Admitted")) %>% 
+  plot_epicurve(
+    date_col = epi_week_consultation, 
+    group_col = patcourse_admit,
+    prop_col = patcourse_admit,
+    prop_numer = "Admitted",
+    prop_denom = c("Admitted", "Not Admitted"),
+    facet_col = site_name,
+    floor_date_week = FALSE, 
+    sec_date_axis = TRUE,
+    date_lab = "Week of Consultation", 
+    y_lab = "Patients",
+    group_lab = "Consultation",
+    prop_lab = "Admitted"
+  ) +
+  labs(caption = glue::glue("Missing data: Consultation Date {missing_consultation}, Admission: {missing_admission}"))
+
+ggsave(file.path(path.local.msf.graphs, paste0('hist_epicurve_consult_admit', '_', week_report, '.png')),
+       plot = hist_epicurve_consult_admit_site, 
+       width = 6, 
+       height = 4, 
+       scale = 1.1,
+       dpi = 320)
+
+hist_epicurve_consult_admit_site
 ```
 
 <!---BLOCK_MULTICOL_START--->

@@ -1,7 +1,7 @@
 
 # set ggplot theme
 ggplot2::theme_set(ggplot2::theme_light(base_size = 14) + theme(panel.grid.minor = element_blank()))
-
+nord_pal <- c("#486090FF", "#6078A8FF", "#7890A8FF", "#90A8C0FF", "#F0D8C0FF", "#D6BBCFFF", "#A8C0C0FF", "#C0D8D8FF", "#A8A890FF")
 
 cm_to_in <- 0.39370079
 

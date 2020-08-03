@@ -4,12 +4,20 @@
 #' Smoothing using moving average with a parameterable time-window (in days)
 #' Model time-series using a linear regression
 
-linear_model_cnt <- function(dta, series, last_date, time_unit_extent = 12, ma_window = 3, min_sum = 30){
+linear_model_cnt <- function(dta, iso_country = NULL, series, last_date, time_window = 12, ma_window = 3, min_sum = 30){
   
-  dates_extent <- c(last_date - (time_unit_extent - 1), last_date)
-    
-  # Fill gaps in dta
+  dates_extent <- c(last_date - (time_window - 1), last_date)
+  
+  country_id <- dta %>% distinct(iso_a3, country)
+  
+  if (!is.null(iso_country)) {
+    dta <- dta %>% 
+      filter(iso_a3 %in% iso_country)
+  } 
+  
+  # Fill gaps in time-series
   dta <- dta %>% 
+    select(date, sym(series)) %>% 
     filter(between(date, dates_extent[1], dates_extent[2])) %>% 
     tidyr::complete(date = seq.Date(min(date, na.rm = TRUE), 
                                     max(date, na.rm = TRUE), by = 1), 
@@ -33,6 +41,7 @@ linear_model_cnt <- function(dta, series, last_date, time_unit_extent = 12, ma_w
     matched_rows <- match(rownames(preds), rownames(mdl_preds))
     matched_cols <- match(colnames(preds), colnames(mdl_preds))
     mdl_preds[matched_rows, matched_cols] <- preds
+    mdl_preds <- as_tibble(mdl_preds)
     
     mdl_coeffs <- tibble(coeff = coefficients(mdl)[[2]], 
                          lwr   = confint(mdl)[2,1], 
@@ -50,19 +59,15 @@ linear_model_cnt <- function(dta, series, last_date, time_unit_extent = 12, ma_w
                          upr   = NA_real_)
   }
   
-}
-
+  preds <- cbind(dta, mdl_preds)
   
-  # Calculate doubling time
-  tbl_doubling_time <- linear_doubling_time(tbl_coeffs)
-  
-  return(list(mdl = lst_mdls, 
-              preds = lst_preds, 
-              coeffs = tbl_coeffs, 
-              doubling_time = tbl_doubling_time, 
-              par = list(time_unit_sourced  = dates_extent, 
-                         time_unit_modelled = time_unit_extent - (ma_window - 1), 
-                         model = 'lm(log(ma) ~ date, data = dta)', 
+  return(list(country_id = country_id, 
+              model = mdl, 
+              preds = preds, 
+              coeffs = mdl_coeffs, 
+              par = list(model_name = 'linear regression model', 
+                         time_unit_sourced = dates_extent, 
+                         time_unit_modelled = time_window - (ma_window - 1), 
                          moving_average_extent = ma_window, 
                          minimum_observations_sum = min_sum)))
 }
@@ -70,148 +75,29 @@ linear_model_cnt <- function(dta, series, last_date, time_unit_extent = 12, ma_w
 
 
 
-# Filter to a time frame defined by time_unit_extent
-# Model data for each country based on a quasipoisson regression
-# (quasipoisson distribution is used mostly because of the zero values)
 
-quasipoisson_model_cnt <- function(series, lst_dta, last_date, time_unit_extent = 12, ma_window = 3, min_sum = 30){
+#' To calculate the doubling time based on the trends
+doubling_time <- function(tbl_coeffs) {
   
-  # The Model (quasipoisson regression)
-
-  dates_extent <- c(last_date - (time_unit_extent - 1), last_date)
-  
-  lst_mdls  <- list()
-  lst_preds <- list()
-  tbl_coeffs <- tibble(iso_a3 = character(), 
-                       coeff  = numeric(), 
-                       lwr    = numeric(), 
-                       upr    = numeric())
-  
-  for (i in names(lst_dta)) {
+  coeff <- tbl_coeffs$coeff
+  lwr   <- tbl_coeffs$lwr
+  upr   <- tbl_coeffs$upr
     
-    dta <- lst_dta[[i]] %>% 
-      filter(between(date, dates_extent[1], dates_extent[2])) %>% 
-      tidyr::complete(date = seq.Date(min(date, na.rm = TRUE), 
-                                      max(date, na.rm = TRUE), by = 1), 
-                      fill = list(cases = NA_real_, deaths = NA_real_))
-
-    dta <- lst_dta[[i]]
-    
-    if (sum(dta[series], na.rm = TRUE) > min_sum) {
+    if (!is.na(coeff) & all(lwr > 0, upr > 0)) {
       
-      dta$obs <- dta[[series]]
-      
-      mdl <- glm(obs ~ date, family = quasipoisson(link = 'log'), data = dta)
-      
-      mdl_fit <- predict(mdl, type = 'link', se.fit = TRUE)
-      
-      mdl_preds  <- tibble(fit = exp(mdl_fit$fit), 
-                           lwr = exp(mdl_fit$fit - (1.96 * mdl_fit$se.fit)), 
-                           upr = exp(mdl_fit$fit + (1.96 * mdl_fit$se.fit)))
-      
-      mdl_coeffs <- tibble(coeff = coefficients(mdl)[[2]], 
-                           lwr   = confint(mdl)[2,1], 
-                           upr   = confint(mdl)[2,2])
-
+      tbl_doubling_time <- tibble(est = log(2)/tbl_coeffs$coeff, 
+                                  lwr = log(2)/tbl_coeffs$upr, 
+                                  upr = log(2)/tbl_coeffs$lwr)
     } else {
-      
-      mdl <- NA_character_
-      
-      mdl_preds  <- tibble(fit = rep(NA_real_, dim(dta)[1]), 
-                           lwr = rep(NA_real_, dim(dta)[1]), 
-                           upr = rep(NA_real_, dim(dta)[1]))
-      
-      mdl_coeffs <- tibble(coeff = NA_real_, 
-                           lwr   = NA_real_, 
-                           upr   = NA_real_)
+      tbl_doubling_time <- tibble(est = NA_real_, 
+                                  lwr = NA_real_, 
+                                  upr = NA_real_)
     }
-    
-    lst_mdls[[i]] <- mdl
-    
-    lst_preds[[i]] <- mdl_preds
-    
-    tbl_coeffs <- tbl_coeffs %>% 
-      add_row(iso_a3 = i, mdl_coeffs)
-  }
   
-  # Calculate doubling time
-  tbl_doubling_time <- quasipoisson_doubling_time(tbl_coeffs)
-  
-  return(list(mdl = lst_mdls, 
-              preds = lst_preds, 
-              coeffs = tbl_coeffs, 
-              doubling_time = tbl_doubling_time, 
-              par = list(time_unit_sourced  = dates_extent, 
-                         model = 'glm(obs ~ date, family = quasipoisson(link = "log"), data = dta)', 
-                         minimum_observations_sum = min_sum)))
+  return(tbl_doubling_time)
 }
 
 
-
-# DOUBLING TIME
-
-# Calculate linear doubling time
-linear_doubling_time <- function(tbl_coeffs) {
-  
-  df_doubling_time <- tibble(iso_a3 = as.character(), 
-                             est    = as.numeric(),
-                             lwr    = as.numeric(),
-                             upr    = as.numeric())
-  
-  for (i in tbl_coeffs$iso_a3) {
-    
-    row_coeffs <- tbl_coeffs %>% filter(iso_a3 == i)
-    
-    if (!is.na(row_coeffs$coeff)) {
-      est <- log(2)/row_coeffs$coeff
-      lwr <- log(2)/row_coeffs$upr
-      upr <- log(2)/row_coeffs$lwr
-    } else {
-      est <- NA_real_
-      lwr <- NA_real_
-      upr <- NA_real_
-    }
-    
-    df_doubling_time <- df_doubling_time %>% 
-      add_row(iso_a3 = i, 
-              est = est,
-              lwr = lwr, 
-              upr = upr)
-  }
-  return(df_doubling_time)
-}
-
-
-# Calculate quasipoisson doubling time
-quasipoisson_doubling_time <- function(tbl_coeffs) {
-  
-  df_doubling_time <- tibble(iso_a3 = character(), 
-                             est = numeric(), 
-                             lwr = numeric(), 
-                             upr = numeric())
-  
-  for (i in tbl_coeffs$iso_a3) {
-    
-    row_coeffs <- tbl_coeffs %>% filter(iso_a3 == i)
-    
-    if (!is.na(row_coeffs$coeff)) {
-      est <- log(2)/row_coeffs$coeff
-      lwr <- log(2)/row_coeffs$upr
-      upr <- log(2)/row_coeffs$lwr
-    } else {
-      est <- NA_real_
-      lwr <- NA_real_
-      upr <- NA_real_
-    }
-    
-    df_doubling_time <- df_doubling_time %>% 
-      add_row(iso_a3 = i, 
-              est = est,
-              lwr = lwr,
-              upr = upr)
-  }
-  return(df_doubling_time)
-}
 
 
 

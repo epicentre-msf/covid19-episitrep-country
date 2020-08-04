@@ -162,6 +162,9 @@ get_msf_country_aggregated <- function(path, iso_country, update_data = TRUE) {
 }
 
 
+df_linelist=dta_msf_linelist
+df_aggregated= dta_msf_aggregated
+
 get_msf_combined_data <- function(df_linelist, df_aggregated) {
   
   df_combined <- df_linelist %>%
@@ -179,7 +182,7 @@ get_msf_combined_data <- function(df_linelist, df_aggregated) {
   if (!is.null(df_aggregated)) {
     df_combined <- df_combined %>% 
       bind_rows(
-        df_weekly_aggregated %>% 
+        df_aggregated %>% 
           filter(!project %in% c('Lesvos-Moria', 'Lesvos-Moria Ped')) %>% 
           select(-region, -project, -week) %>% 
           mutate(date = lubridate::as_date(date))

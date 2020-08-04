@@ -30,6 +30,7 @@ library(webshot)
 library(knitr)
 library(english)
 library(readxl)
+library(distill)
 
 
 # Create project paths -----

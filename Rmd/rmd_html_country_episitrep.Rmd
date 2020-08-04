@@ -633,7 +633,46 @@ Overall, `r ftext("X", fp_text_hightlight)` asymptomatic patients were classifie
 # Priority ++
 # by Paul
 
-# Histogram with frequency and proportion of recorded symptoms, by Covid19 status, filtered by OC /country/ project
+sympt_lvl <-  c(
+  "None" = "patcourse_asymp",
+  "Fever/Chills" = "MSF_symptom_fever_chills",
+  "Cough" = "MSF_symptom_cough",
+  "Breathlessness" = "MSF_symptom_breathlessness",
+  "Sore throat" = "MSF_symptom_sorethoat" ,
+  "Headache" = "MSF_symptom_headache",
+  "Abdominal pain" = "MSF_symptom_abdominal_pain",
+  "Tiredness" = "MSF_symptom_tiredness",
+  "Aches" = "MSF_symptom_aches",
+  "Nose congestion" = "MSF_symptom_nose_congestion",
+  "Runny nose" = "MSF_symptom_runny_nose",
+  "Diarrhoea" = "MSF_symptom_diarrhoea",
+  "Vomitting" = "MSF_symptom_vomiting",
+  "Loss of taste" = "MSF_symptom_loss_taste",
+  "Loss of smell" = "MSF_symptom_anosmia",
+  "Chest pain" = "MSF_symptom_chest_pain"
+)
+
+df_symptoms <- dta_msf_linelist %>% 
+  select(starts_with("MSF_Symptom"), patcourse_asymp) %>% 
+      select(-ends_with("_date_onset")) %>% 
+      tidyr::pivot_longer(everything(), names_to = "symptom", values_to = "yes_no") %>% 
+      mutate(symptom = recode(symptom, MSF_symptom_chills = "MSF_symptom_fever_chills", MSF_symptom_fever = "MSF_symptom_fever_chills")) %>% 
+      group_by(symptom) %>% 
+      summarise(total = sum(!is.na(yes_no)),
+                yes = sum(yes_no == "Yes", na.rm = T),
+                prop = (yes / total)) %>% 
+      filter(yes > 0) %>% 
+      mutate(symptom = factor(symptom, levels = sympt_lvl, labels = names(sympt_lvl))) %>% 
+      arrange(-prop)
+
+
+ggplot(df_symptoms, aes(fct_reorder(symptom, prop), prop)) +
+  geom_col(fill = "steelblue") +
+  geom_text(aes(label = glue::glue("{yes}/{total}"), y = prop + .05), colour = "black", size = 4) +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1), expand = expansion(mult = c(0, 0.1))) +
+  coord_flip() +
+  labs(y = "Proportion", x = NULL)
+
 ```
 
 <!---BLOCK_MULTICOL_START--->
@@ -695,6 +734,32 @@ Overall, `r ftext("X", fp_text_hightlight)` asymptomatic patients were classifie
 # by Paul
 
 # Age/sex pyramid of patients, filtered by OC /country/ project
+
+m_age_sex <- dta_msf_linelist %>% filter(MSF_covid_status == "Confirmed") %>% summarise(age = sum(is.na(age_in_years)), sex = sum(is.na(patinfo_sex)))
+
+tbl_pyramid_confirmed <- dta_msf_linelist %>% 
+  drop_na(patinfo_sex, age_group) %>% 
+  filter(MSF_covid_status %in% c("Confirmed")) %>% 
+  count(patinfo_sex, age_group) %>% 
+  mutate(n = if_else(patinfo_sex == "M", -n, n))
+
+pyramid_age_sex_confirmed <- ggplot(tbl_pyramid_confirmed, aes(x = age_group, y = n, fill = patinfo_sex)) +
+  geom_col() +
+  geom_hline(yintercept = 0, colour = "black") +
+  geom_text(aes(label = abs(n), hjust = if_else(n >= 0, 1.1, -0.1)), colour = "white", size = 4) +
+  coord_flip() +
+  scale_fill_manual(name = NULL, values = c("#4E79A7FF", "#A0CBE8FF"), breaks = c("M", "F"), labels = c("Males", "Females")) +
+  scale_y_continuous(limits = pyramid_limits, breaks = pyramid_brks, label = abs) + 
+  theme(legend.position = "top") +
+  labs(x = "Age Group", y = "Confirmed Patients", caption = glue::glue("Missing Data: Age {m_age_sex$age}, Sex {m_age_sex$sex}"))  +
+  guides(y.sec = guide_axis_label_trans(~paste(.x))) # show age group labels on both axis
+
+ggsave(file.path(path.local.msf.graphs, paste0('pyramid_age_sex_confirmed', '_', week_report, '.png')),
+       plot = pyramid_age_sex_confirmed,
+       width = 8,
+       height = 6)
+
+pyramid_age_sex_confirmed
 ```
 
 <!---BLOCK_MULTICOL_START--->
@@ -713,6 +778,31 @@ Overall, `r ftext("X", fp_text_hightlight)` asymptomatic patients were classifie
 # by Paul
 
 # [Multifacet Age/sex pyramid of patients for each project, filtered by OC /country/ project]
+
+tbl_pyramid_confirmed_site <- dta_msf_linelist %>% 
+  drop_na(patinfo_sex, age_group) %>% 
+  filter(MSF_covid_status %in% c("Confirmed")) %>% 
+  count(site_name, patinfo_sex, age_group) %>% 
+  mutate(n = if_else(patinfo_sex == "M", -n, n))
+
+pyramid_age_sex_confirmed_site <- ggplot(tbl_pyramid_confirmed_site, aes(x = age_group, y = n, fill = patinfo_sex)) +
+  facet_wrap(~site_name, ncol = 2, scales = "free_x", labeller = label_wrap_gen()) +
+  geom_col() +
+  geom_hline(yintercept = 0, colour = "black") +
+  geom_text(aes(label = abs(n), hjust = if_else(n >= 0, 1.1, -0.1)), colour = "white", size = 4) +
+  coord_flip() +
+  scale_fill_manual(name = NULL, values = c("#4E79A7FF", "#A0CBE8FF"), breaks = c("M", "F"), labels = c("Males", "Females")) +
+  scale_y_continuous(label = abs, limits = pyramid_limits) + 
+  theme(legend.position = "top") +
+  labs(x = "Age Group", y = "Confirmed Patients", caption = glue::glue("Missing Data: Age {m_age_sex$age}, Sex {m_age_sex$sex}")) 
+
+ggsave(file.path(path.local.msf.graphs, paste0('pyramid_age_sex_confirmed_site', '_', week_report, '.png')),
+       plot = pyramid_age_sex_confirmed_site,
+       width = 8,
+       height = 8)
+
+
+pyramid_age_sex_confirmed_site
 ```
 
 <!---BLOCK_MULTICOL_START--->
@@ -844,6 +934,43 @@ To be completed as appropriate -->
 # by Paul
 
 #[Graph displaying the Case Fatality Risk, by age groups, with respective confidence intervals (died and recovered patients), filtered by OC /country/ project]
+
+df_severity <- dta_msf_linelist %>% 
+  filter(age_group != "Unknown", MSF_covid_status %in% c("Confirmed", "Probable", "Suspect")) %>% #, MSF_covid_status == "Confirmed"
+  group_by(age_group) %>% 
+  summarize(
+    n = n(),
+    n_hosp = sum(patcourse_admit == "Yes", na.rm = TRUE),
+    n_hosp_known = sum(patcourse_admit %in% c("Yes", "No"), na.rm = TRUE),
+    p_hosp = n_hosp / n_hosp_known,
+    p_hosp_low95 = as.numeric(binom.test(n_hosp, n_hosp_known)$conf.int)[1],
+    p_hosp_upp95 = as.numeric(binom.test(n_hosp, n_hosp_known)$conf.int)[2],
+    n_died = sum(outcome_patcourse_status == "Died", na.rm = TRUE),
+    n_died_known = sum(outcome_patcourse_status %in% c("Died", "Cured"), na.rm = TRUE),
+    p_died_low95 = as.numeric(binom.test(n_died, n_died_known)$conf.int)[1],
+    p_died_upp95 = as.numeric(binom.test(n_died, n_died_known)$conf.int)[2],
+    p_died = n_died / n_died_known,
+    # hosp_lab = paste0("(", n_hosp_known, ")"),
+    # died_lab = paste0("(", n_died_known, ")"),
+    hosp_lab = paste0("(", n_hosp, "/", n_hosp_known, ")"),
+    died_lab = paste0("(", n_died, "/", n_died_known, ")")
+  ) %>% 
+  ungroup()
+
+dots_cfr_agegroup <- ggplot(df_severity, aes(x = age_group)) +
+  geom_point(aes(y = p_died), size = 2) +
+  geom_linerange(aes(ymin = p_died_low95, ymax = p_died_upp95)) +
+  geom_text(aes(label = died_lab, y = p_died_upp95 + 0.02), size = 4.2) +
+  scale_y_continuous(breaks = seq(0, 1, 0.2), limits = c(0, 1), labels = scales::percent_format(accuracy = 1), sec.axis = dup_axis(name = NULL)) +  
+  labs(x = "Age Group", y = "CFR", caption = "CFR = deaths / known outcomes (cured + died)\nLine range shows binomial 95% confidence intervals") 
+
+ggsave(file.path(path.local.msf.graphs, paste0('dots_cfr_agegroup', '_', week_report, '.png')),
+       plot = dots_cfr_agegroup,
+       scale = 1.1,
+       dpi = 320)
+
+
+dots_cfr_agegroup
 ```
 
 
@@ -870,6 +997,28 @@ The overall delay from symptoms to consultation/admission in MSF facilities was 
 # by Paul
 
 #[Box plot displaying distribution of delay from symptoms onset to consultation/admission, aggregated by week, with trend and filtered by OC /country/ project]
+
+dta_delay <- dta_msf_linelist %>%
+  filter(MSF_covid_status %in% c("Confirmed", "Suspected", "Probable")) %>%
+  drop_na(epi_week_consultation, MSF_delay_before_admission) %>%
+  filter(MSF_delay_before_admission >= 0, MSF_delay_before_admission <= 50) # filter any delays over 50 days
+  
+boxplot_delay_admission_week <- ggplot(dta_delay, aes(epi_week_consultation, MSF_delay_before_admission, group = epi_week_consultation)) +
+  geom_boxplot() +
+  scale_x_date(
+    name = "Week of Consultation", date_breaks = "1 week", date_labels = "%V", 
+    sec.axis = ggplot2::sec_axis(trans = ~ .), expand = expansion(mult = c(0.01, 0.01))
+    ) +
+  labs(y = "Onset to admission delay (days)")
+
+ggsave(file.path(path.local.msf.graphs, paste0('boxplot_delay_admission_week', '_', week_report, '.png')),
+       plot = boxplot_delay_admission_week, 
+       width = 6, 
+       height = 4, 
+       scale = 1.1,
+       dpi = 320)
+
+boxplot_delay_admission_week
 ```
 
 <!-- Weekly distribution of delay from symptoms to consultation/admission of covid19 patients in each of the MSF facilities -->
@@ -891,6 +1040,34 @@ The overall length of stay in MSF facilities was of X days.
 # by Paul
 
 #[Box plot displaying distribution of length of stay for hospitalized patients (all hospitalized and admitted in ICU), aggregated by week, with trend and filtered by OC /country/ project. The last 2 weeks will be excluded due to uncomplete data]
+
+# 2 most recent epi weeks to remove from chart
+latest_2_epiweeks <- max_2(dta_msf_linelist$epi_week_consultation)
+
+# length stay
+tbl_length_stay <- dta_msf_linelist %>% 
+  filter(MSF_covid_status %in% c('Confirmed', 'Probable', 'Suspected')) %>% 
+  filter(patcourse_admit == 'Yes') %>% 
+  drop_na(epi_week_consultation, MSF_length_stay) %>% 
+  filter(MSF_length_stay <= 50, !epi_week_consultation %in% latest_2_epiweeks) # filter any stays over 50 days
+
+
+boxplot_length_stay_week <- ggplot(tbl_length_stay, aes(epi_week_consultation, MSF_length_stay, group = epi_week_consultation)) + 
+  geom_boxplot() + 
+  scale_x_date(
+    name = "Week of Admission", date_breaks = "1 week", date_labels = "%V", 
+    sec.axis = ggplot2::sec_axis(trans = ~ .), expand = expansion(mult = c(0.01, 0.01))
+  ) +
+  labs(y = "Length of stay in hospital (days)", caption = "Latest 2 weeks omitted for data completeness purposes")
+
+ggsave(file.path(path.local.msf.graphs, paste0('boxplot_length_stay_week', '_', week_report, '.png')),
+       plot = boxplot_length_stay_week, 
+       width = 6, 
+       height = 4, 
+       scale = 1.1,
+       dpi = 320)
+
+boxplot_length_stay_week
 ```
 
 <!-- Weekly distribution of length of stay of covid19 patients in each of the MSF facilities

@@ -46,7 +46,7 @@ source(file.path(path.R, "utils_modelling.R") , encoding = "UTF-8")
 # Get list of countries (with pop)
 df_countries <- get_countries_list()
 
-iso_country <- 'AFG'
+iso_country <- 'COD'
 
 name_country <- df_countries %>% 
   filter(iso_a3 == iso_country) %>% 
@@ -80,61 +80,6 @@ dta_msf_combined <- get_msf_combined_data(dta_msf_linelist, dta_msf_aggregated)
 ```
 
 
-```{r parameters, include=FALSE}
-
-my_doc <- read_docx(file.path(path.templates, 'template_country_episitrep.docx'))
-
-txt_page_width  <- docx_dim(my_doc)$page[[1]] - docx_dim(my_doc)$margins[[3]] - docx_dim(my_doc)$margins[[4]]
-
-cm_to_in <- 0.39370079
-inter_col_width <- cm_to_in
-txt_col_width <- (txt_page_width - inter_col_width)/2
-
-
-# Create new styles
-# PS: still did not understand how to use the template styles with officedown
-
-fp_par_title <- fp_par(
-  text.align = "center")
-
-fp_text_title <- fp_text(
-  color = '#2F5496', 
-  font.family = 'Calibri Light', 
-  font.size = 28, 
-  bold = TRUE)
-
-fs_title <- fpar(fp_p = fp_par_title, fp_t = fp_text_title)
-
-fp_par_subtitle <- fp_par(
-  text.align = "center")
-
-fp_text_subtitle <- fp_text(
-  color = '#2F5496', 
-  font.family = 'Calibri Light', 
-  font.size = 18, 
-  bold = TRUE)
-
-fp_text_description <- fp_text(
-  font.family = 'Calibri', 
-  font.size = 8, 
-  bold = TRUE)
-
-fp_par_description <- fp_par(
-  text.align = "left", 
-  padding.bottom = 5, 
-  border.bottom = fp_border())
-
-fp_text_hightlight <- fp_text(
-  font.family = 'Calibri', 
-  font.size = 10,
-  shading.color = "yellow")
-
-fp_par_no_padding <- fp_par(
-  padding.bottom = 0, 
-  padding.top = 0)
-
-```
-
 # Data sources and definitions
 
 This report uses the following data sources: 
@@ -167,7 +112,8 @@ From this point all pairs of chunks are to be independent from each others
 ## Evolution in cases and trends
 
 <!-- Figure 1 - Epidemiological curves in cases and death -->
-```{r, include=FALSE}
+```{r plot-epicurve, fig.width=18*cm_to_in, fig.cap=paste('Covid-19 cases and deaths and trend estimations in', name_country), dpi=300}
+
 # Priority +++
 # by Francesco
 
@@ -188,10 +134,20 @@ multiplot_counts_trends <- country_six_plots(dta = dta_ecdc,
                                              mdl1_deaths = mdl_trend_deaths_30d, 
                                              mdl2_deaths = mdl_trend_deaths_12d)
 
+
+ggsave(file.path(path.local.country.week.graphs, paste0('multiplot_counts_trends', '_', week_report, '.png')), 
+       plot = multiplot_counts_trends, 
+       scale = 1, 
+       dpi = 320)
+
+
+
+multiplot_counts_trends + plot_annotation(title = "")
+
 ``` 
 
 <!-- Table 1 - Summary of the epidemic situation in the country -->
-```{r, include=FALSE}
+```{r table-summary-country}
 # Priority +++
 # by Francesco
 
@@ -265,74 +221,62 @@ doubling <- rbind(doubling_30d, doubling_12d)
 # Compose the final table
 tbl_summary_country <- rbind(tbl_tot, tbl_30days, tbl_12days) %>% 
   mutate(cfr = deaths / cases * 100) %>% 
-  left_join(doubling)
-
-# Edit flextable
-ftbl_summary_country <- tbl_summary_country %>% 
-  flextable(col_keys = c('period', 'cases', 'deaths', 'cfr', 'ec1', 'cases_inc', 'deaths_inc', 'ec2', 'est_cases','ci_cases', 'ec3',  'est_deaths', 'ci_deaths')) %>% 
-  set_header_labels(period = 'Period',
-                    cases = 'Counts', 
-                    deaths = 'Counts', 
-                    cfr = '', 
-                    ec1 = '', 
-                    cases_inc  = 'Cumulative Incidence per 100,000', 
-                    deaths_inc = 'Cumulative Incidence per 100,000', 
-                    ec2 = '', 
-                    est_cases = 'Doubling time in cases', 
-                    ci_cases  = 'Doubling time in cases', 
-                    ec3 = '', 
-                    est_deaths = 'Doubling time in deaths', 
-                    ci_deaths  = 'Doubling time in deaths') %>% 
-  colformat_num(j = c('cases', 'deaths', 'cases_inc', 'deaths_inc'), 
-                digits = 0) %>% 
-  colformat_num(j = c('cfr', 'est_cases', 'est_deaths'), 
-                digits = 1) %>% 
-  colformat_num(j = c('est_cases', 'est_deaths'), 
-                digits = 1, 
-                na_str = "---") %>% 
-  colformat_char(j = c('ci_cases', 'ci_deaths'), 
-                na_str = "---") %>% 
-  merge_at(i = 1, j = 2:3, part = 'header') %>% 
-  merge_at(i = 1, j = 6:7, part = 'header') %>% 
-  merge_at(i = 1, j = 9:10, part = 'header') %>% 
-  merge_at(i = 1, j = 12:13, part = 'header') %>% 
-  add_header_row(values = c('', 'Cases', 'Deaths', 'naive CFR', '', 'Cases', 'Deaths', '', 'Days', '[95% CI]', '', 'Days', '[95% CI]'), top = FALSE) %>% 
-  theme_alafoli() %>% 
-  hline(j = c(2:3, 6:7, 9:10, 12:13), border = fp_border(width = 1), part = "header") %>% 
-  hline_top(border = fp_border(width = 1), part = "header") %>%
-  hline_bottom(border = fp_border(width = 1), part = "body") %>% 
-  fix_border_issues() %>% 
-  fit_to_width(max_width = 14 * cm_to_in) %>% 
-  autofit()
+  left_join(doubling) %>% 
+  select(period, cases, deaths, cfr, cases_inc, deaths_inc, est_cases, ci_cases, est_deaths, ci_deaths)
 
 
-ftbl_summary_country 
+# gt table
+gtbl_summary_country <- tbl_summary_country %>% 
+  gt() %>% 
+  cols_label(
+    period = 'Period', 
+    cases  = 'Cases', 
+    deaths = 'Deaths', 
+    cfr = 'naive CFR', 
+    cases_inc = 'Cases', 
+    deaths_inc = 'Deaths', 
+    est_cases = 'Rate', 
+    ci_cases  = '[95% CI]', 
+    est_deaths = 'Rate', 
+    ci_deaths = '[95% CI]') %>% 
+  tab_spanner(
+    label = 'Count', 
+    columns = vars(cases, deaths)) %>% 
+  tab_spanner(
+    label = html(paste('Cumulative incidence<br> per', format(inc_factor, scientific = FALSE, big.mark = ','), 'pop')), 
+    columns = vars(cases_inc, deaths_inc)) %>% 
+  tab_spanner(
+    label = html('Doubling time<br>in cases'), 
+    columns = vars(est_cases, ci_cases)) %>% 
+  tab_spanner(
+    label = html('Doubling time<br>in deaths'), 
+    columns = vars(est_deaths, ci_deaths)) %>% 
+  fmt_number(
+    columns = vars(cases, cases_inc, deaths, deaths_inc), 
+    decimals = 0) %>% 
+  fmt_number(
+    columns = vars(cfr, est_cases, est_deaths), 
+    decimals = 1) %>% 
+  fmt_missing(
+    columns = vars(est_cases, ci_cases, est_deaths, ci_deaths), 
+    rows = 1, 
+    missing_text = '') %>% 
+  fmt_missing(
+    columns = vars(est_cases, ci_cases, est_deaths, ci_deaths), 
+    rows = c(2:3), 
+    missing_text = '---') %>% 
+   tab_options(
+    column_labels.font.weight = "bold", 
+    data_row.padding = px(1))
+
+gtsave(gtbl_summary_country, 
+       file.path(path.local.country.week.tables, paste0('gtbl_summary_country', '_', name_country, '.png'))) %>%
+  invisible()
 
 
-```
-
-
-<!---BLOCK_MULTICOL_START--->
-Considering ECDC data, `r name_country` reported an **`r ftext("[increasing/stable/decreasing]", fp_text_hightlight)` trend in covid19 cases** and an **`r ftext("[increasing/stable/decreasing]", fp_text_hightlight)` trend in deaths** in the last 12 days**. Last week, reported trend in covid19 cases was `r ftext("[increasing/stable/decreasing]", fp_text_hightlight)` and reported trend in covid19 deaths was `r ftext("[increasing/stable/decreasing]", fp_text_hightlight)`. 
-
-The doubling in cases was estimated at X days, and the doubling time in cases at Y days. It has been X days since `r ftext("[country]", fp_text_hightlight)`. reported an increasing trend.
-As of `r ftext("28th June 2020, the attack rate in cases was of [xx%] and the attack rate in deaths of [XX%]", fp_text_hightlight)`. 
-
-<!-- To be completed by comments and/or further analysis available at country level (geographical distribution of cases, description of cases through MoH linelist) -->
-
-<!---BLOCK_MULTICOL_STOP{widths: [`r rep(txt_col_width , 2)`], space: `r inter_col_width`, sep: false}--->
-
-```{r plot-epicurve, fig.width=18*cm_to_in, fig.cap=paste('Covid-19 cases and deaths and trend estimations in', name_country), dpi=300}
-
-multiplot_counts_trends + plot_annotation(title = "")
-
-```
-
-
-
-```{r table-summary-country}
-
-ftbl_summary_country
+gtbl_summary_country %>% 
+  tab_header(
+    title = 'Summary cases and deaths and evolution of the epidemic in tha last 30 and 12 days')
 
 ```
 
@@ -340,44 +284,24 @@ ftbl_summary_country
 ## Country situation in surveillance, social measures and testing 
 
 ```{r, include=FALSE}
+# Priority ++
+# To be assigned
+
 # Table of the number of tests
-# This table is not to be displayed. It is used by the text below
+
 ```
-
-
-<!---BLOCK_MULTICOL_START--->
-As of `r ftext(format(date_max_report, "%d %B %Y"), fp_text_hightlight)`, `r ftext(name_country, fp_text_hightlight)` reported having performed `r ftext("X", fp_text_hightlight)` tests, including `r ftext("Y", fp_text_hightlight)` in the last 12 days `r ftext("[reliable/unreliable]", fp_text_hightlight)` data from FIND database. Unreliable data was defined as `r ftext("[to be precised]", fp_text_hightlight)`). The proportion of positivity was estimated at `r ftext("Z%", fp_text_hightlight)`.
-<!---BLOCK_MULTICOL_STOP{widths: [`r rep(txt_col_width , 2)`], space: `r inter_col_width`, sep: false}--->
 
 
 
 # Analysis at MSF level
 
 <!-- A note of what this report section is about and other useful links -->
-<!---BLOCK_MULTICOL_START--->
 This section of the report analyses data reported by MSF in the reporting system created by Epicentre and distributed to MSF projects. Data can also be visualized and explored in the Epicentre Linelist Dashboard (see information besides).
-
-`r run_columnbreak()`
-**Epicentre dashboard for covid19 linelist data**
-
-::: {custom-style="Description"}
-\- Go to this url to sign up with your MSF email address
-\- Then consult the dashboard here
-\- Navigate and use filters to display Linelist data of your interest
-:::
-
-<!---BLOCK_MULTICOL_STOP{widths: [`r rep(txt_col_width , 2)`], space: `r inter_col_width`, sep: false}--->
-
----
 
 
 ## Overview of reported data
 
 ### Projects reporting data
-
-<!---BLOCK_MULTICOL_START--->
-As of `r format(date_max_report, "%d-%b-%Y")`, data were reported from `r ftext("X", fp_text_hightlight)` MSF project sites in the country (representing `r ftext("list of OCs represented", fp_text_hightlight)`), for a total of Y patients consulted and/or admitted, including `r ftext("Z", fp_text_hightlight)` confirmed. `r ftext("X", fp_text_hightlight)` projects however only reported aggregated data – they are included in Table 2 and Figure 2 only as of now but not in other analysis below nor in dashboard. 
-<!---BLOCK_MULTICOL_STOP{widths: [`r rep(txt_col_width , 2)`], space: `r inter_col_width`, sep: false}--->
 
 <!-- Table 2 – Projects reporting and associated numbers -->
 ```{r}
@@ -385,6 +309,120 @@ As of `r format(date_max_report, "%d-%b-%Y")`, data were reported from `r ftext(
 # by Francesco
 
 # Table with list of projects by country with counts by Covid status (confirmed, probable, suspected, not a case and unknown) and dates of first and last consultation/hospitalisation Projects reporting aggregated data are included in the table.
+
+
+tbl_site_covid_status <- dta_msf_combined %>%
+  select(-c(continent, country, country_lab)) %>%
+  group_by(site_name) %>%
+  summarise(
+    total = n(), 
+    confirmed_n = sum(Confirmed, na.rm = TRUE),
+    probable_n  = sum(Probable, na.rm = TRUE),
+    suspected_n = sum(Suspected, na.rm = TRUE),
+    not_case_n  = sum(`Not a case`, na.rm = TRUE),
+    unknown_n   = sum(Unknown, na.rm = TRUE),
+    confirmed_p = confirmed_n / total,
+    probable_p  = probable_n  / total,
+    suspected_p = suspected_n / total,
+    not_case_p  = not_case_n  / total,
+    unknown_p   = unknown_n   / total) %>%
+  ungroup() %>%
+  arrange(site_name)
+
+
+tbl_site_dates <- dta_msf_combined %>%
+  group_by(site_name) %>%
+  summarise(
+    date_adm_first = format(min(date, na.rm = TRUE), '%d-%m-%Y'),
+    date_adm_last  = format(max(date, na.rm = TRUE), '%d-%m-%Y'))
+
+
+gtbl_site_covid_status <- tbl_site_covid_status %>%
+  left_join(tbl_site_dates) %>%
+  gt() %>%
+  cols_label(
+    country     = 'Site/Project',
+    total       = 'Total',
+    confirmed_n = 'n',
+    probable_n  = 'n',
+    suspected_n = 'n',
+    not_case_n  = 'n',
+    unknown_n   = 'n',
+    confirmed_p = '(%)',
+    probable_p  = '(%)',
+    suspected_p = '(%)',
+    not_case_p  = '(%)',
+    unknown_p   = '(%)',
+    date_adm_first = 'First',
+    date_adm_last  = 'Last') %>%
+  tab_spanner(
+    label = html('Dates of<br>consultation/hospitalisation'),
+    columns = vars(date_adm_first, date_adm_last)) %>%
+  tab_spanner(
+    label = html('Confirmed'),
+    columns = starts_with('confirmed_')) %>%
+  tab_spanner(
+    label = html('Probable'),
+    columns = starts_with('probable_')) %>%
+    tab_spanner(
+    label = html('Suspected'),
+    columns = starts_with('suspected_')) %>%
+    tab_spanner(
+    label = html('Not a case'),
+    columns = starts_with('not_case_')) %>%
+  tab_spanner(
+    label = html('(Unknown)'),
+    columns = starts_with('unknown_')) %>%
+  fmt_number(
+    columns = ends_with('_p'),
+    decimals = 1,
+    scale_by = 100,
+    pattern = "({x})") %>%
+  fmt_missing(
+    columns = starts_with('date_adm_'),
+    missing_text = "Unknown") %>%
+  cols_align(
+    align = 'right',
+    columns = vars(total)) %>%
+  cols_align(
+    align = 'left',
+    columns = ends_with('_p')) %>%
+  cols_align(
+    align = 'center',
+    columns = starts_with('date_adm_')) %>%
+  tab_style(
+    style = list(
+      cell_text(align = "left")),
+    locations = cells_column_labels(columns = ends_with('_p'))) %>%
+  summary_rows(
+    groups = TRUE,
+    columns = vars(total, confirmed_n, probable_n, suspected_n, not_case_n, unknown_n),
+    fns = list('Country Total' = ~ sum(.)),
+    missing_text = "",
+    formatter = fmt_number,
+    decimals = 0) %>%
+  grand_summary_rows(
+    columns = vars(total, confirmed_n, probable_n, suspected_n, not_case_n, unknown_n),
+    fns = list('Grand Total' = ~ sum(.)),
+    missing_text = "",
+    formatter = fmt_number,
+    decimals = 0) %>% 
+  tab_source_note(
+    source_note = "(*) These data were reported as aggregated only and are not included in further analysis below") %>% 
+  tab_options(
+    column_labels.font.weight = "bold",
+    row_group.font.weight = 'bold',
+    grand_summary_row.text_transform = 'uppercase',
+    data_row.padding = px(1),
+    row_group.padding = px(1),
+    summary_row.padding = px(1),
+    grand_summary_row.padding = px(1))
+
+gtsave(gtbl_countries_covid_status,
+       file.path(path.local.msf.tables, paste0('gtbl_countries_covid_status', '_', week_report, '.png'))) %>%
+  invisible()
+
+
 ```
 
 

@@ -6,10 +6,12 @@ output:
     tables:
       style: Table Grid
     lists:
-      ol.style: Descriptionbullet
-      ul.style: Descriptionbullet
+      ol.style: Description bullet
+      ul.style: Description bullet
 editor_options: 
   chunk_output_type: console
+params:
+  iso_country: "YEM"
 ---
 
 ```{r setup, include=FALSE}
@@ -17,7 +19,11 @@ editor_options:
 knitr::opts_chunk$set(echo = FALSE, 
                       warning = FALSE, 
                       message = FALSE, 
-                      fig.cap = TRUE)
+                      fig.cap = TRUE,
+                      fig.width = 6.5,
+                      fig.height = 4,
+                      fig.align = "center",
+                      fig.retina = 2)
 
 # Set environment
 source(here::here('R', 'setup.r'), encoding = 'UTF-8')
@@ -36,7 +42,7 @@ source(file.path(path.R, "utils_modelling.R") , encoding = "UTF-8")
 # Get list of countries (with pop)
 df_countries <- get_countries_list()
 
-iso_country <- 'USA'
+iso_country <- params$iso_country
 
 name_country <- df_countries %>% 
   filter(iso_a3 == iso_country) %>% 
@@ -140,9 +146,9 @@ An MSF intersection EpiSitrep that describes the evolution of the epidemic world
 
 This report was compiled by `r ftext("[to be precised]", fp_text_hightlight)`, with the support of Epicentre.`r fp_par_description`
 
-
 <!-- A note of the sources of data and other useful links -->
 <!---BLOCK_MULTICOL_START--->
+
 __Data sources__
 
 ::: {custom-style="Description"}
@@ -435,18 +441,18 @@ hist_epicurve_status <- dta_msf_linelist %>%
   ) +
   labs(caption = glue::glue("Missing data: Consultation Date {missing_consultation}, Status: {missing_status}"))
 
-ggsave(file.path(path.local.msf.graphs, paste0('hist_epicurve_consult_admit', '_', week_report, '.png')),
-       plot = hist_epicurve_status, 
-       width = 6, 
-       height = 4, 
-       scale = 1.1,
-       dpi = 320)
+# ggsave(file.path(path.local.msf.graphs, paste0('hist_epicurve_consult_admit', '_', week_report, '.png')),
+#        plot = hist_epicurve_status, 
+#        width = 6, 
+#        height = 4, 
+#        scale = 1.1,
+#        dpi = 320)
 
 hist_epicurve_status
 ```
 
 <!-- Figure 3 - Weekly evolution of patient intake by covid status in each of the country projects -->
-```{r}
+```{r fig.height=6.5}
 # By Paul 
 
 # Multifacet Histograms of number of patients consulted/admitted weekly for each MSF facility, filtered on OC/country/project, displayed by date of consultation and broken down by covid status]
@@ -464,12 +470,12 @@ hist_epicurve_status <- dta_msf_linelist %>%
   ) +
   labs(caption = glue::glue("Missing data: Consultation Date {missing_consultation}, Status: {missing_status}"))
 
-ggsave(file.path(path.local.msf.graphs, paste0('hist_epicurve_consult_admit', '_', week_report, '.png')),
-       plot = hist_epicurve_status, 
-       width = 6, 
-       height = 4, 
-       scale = 1.1,
-       dpi = 320)
+# ggsave(file.path(path.local.msf.graphs, paste0('hist_epicurve_consult_admit', '_', week_report, '.png')),
+#        plot = hist_epicurve_status, 
+#        width = 6, 
+#        height = 4, 
+#        scale = 1.1,
+#        dpi = 320)
 
 hist_epicurve_status
 
@@ -543,18 +549,18 @@ hist_epicurve_consult_admit <- dta_msf_linelist %>%
   ) +
   labs(caption = glue::glue("Missing data: Consultation Date {missing_consultation}, Admission: {missing_admission}"))
 
-ggsave(file.path(path.local.msf.graphs, paste0('hist_epicurve_consult_admit', '_', week_report, '.png')),
-       plot = hist_epicurve_consult_admit, 
-       width = 6, 
-       height = 4, 
-       scale = 1.1,
-       dpi = 320)
+# ggsave(file.path(path.local.msf.graphs, paste0('hist_epicurve_consult_admit', '_', week_report, '.png')),
+#        plot = hist_epicurve_consult_admit, 
+#        width = 6, 
+#        height = 4, 
+#        scale = 1.1,
+#        dpi = 320)
 
 hist_epicurve_consult_admit
 ```
 
 <!-- Figure 6 - Weekly evolution of patient intake by covid status in each of the country projects -->
-```{r}
+```{r fig.height=6.5}
 # Priority +++
 # by Paul
 
@@ -579,12 +585,12 @@ hist_epicurve_consult_admit_site <- dta_msf_linelist %>%
   ) +
   labs(caption = glue::glue("Missing data: Consultation Date {missing_consultation}, Admission: {missing_admission}"))
 
-ggsave(file.path(path.local.msf.graphs, paste0('hist_epicurve_consult_admit', '_', week_report, '.png')),
-       plot = hist_epicurve_consult_admit_site, 
-       width = 6, 
-       height = 4, 
-       scale = 1.1,
-       dpi = 320)
+# ggsave(file.path(path.local.msf.graphs, paste0('hist_epicurve_consult_admit', '_', week_report, '.png')),
+#        plot = hist_epicurve_consult_admit_site, 
+#        width = 6, 
+#        height = 4, 
+#        scale = 1.1,
+#        dpi = 320)
 
 hist_epicurve_consult_admit_site
 ```

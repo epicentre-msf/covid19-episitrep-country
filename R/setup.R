@@ -1,7 +1,4 @@
 
-rm(list=ls())
-
-
 # Load packages -----
 library(here)
 library(magrittr)

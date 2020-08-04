@@ -162,7 +162,7 @@ plot_epicurve <- function(df,
   
   if(!missing(facet_col)) {
     facet_lab_pos <- match.arg(facet_lab_pos, c("top", "bottom", "left", "right"))
-    p <- p + facet_wrap(vars({{facet_col}}), nrow = facet_nrow, ncol = facet_ncol, strip.position = facet_lab_pos)
+    p <- p + facet_wrap(vars({{facet_col}}), nrow = facet_nrow, ncol = facet_ncol, strip.position = facet_lab_pos, labeller = label_wrap_gen(width = 25))
   }
   
   if(!missing(prop_col)) {
@@ -180,7 +180,7 @@ plot_epicurve <- function(df,
     theme(legend.position = "top",
           panel.grid.major.x = element_blank(),
           panel.grid.minor.x = element_blank(),
-          strip.text = element_text(face = "bold", size = 12)
+          strip.text = element_text(face = "bold", size = 10)
     )
   
   return(p)

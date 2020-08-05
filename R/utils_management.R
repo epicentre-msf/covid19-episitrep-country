@@ -149,7 +149,7 @@ prepare_msf_dta <- function(dta){
   }
   
   # Factorise variables
-  levels_covid_status <- c('Confirmed', 'Probable', 'Suspected', 'Not a case', '(Unknown)')
+  levels_covid_status <- c('Confirmed', 'Probable', 'Suspected', 'Not a case', 'Not a suspect')
   
   levels_outcome_status <- c('Cured', 'Died', 'Left against medical advice', 'Transferred', 'Sent back home', 'Other')
   
@@ -159,7 +159,7 @@ prepare_msf_dta <- function(dta){
     mutate(
       covid_status = factor(covid_status, levels = levels_covid_status) %>% forcats::fct_explicit_na(na_level = 'Unknown'), 
       country = factor(country, levels = df_countries$iso_a3, labels = df_countries$country), 
-      age_in_years = floor(age_in_years), 
+      age_in_years = floor(as.numeric(age_in_years)), 
       admit = factor(admit, levels = levels_ynu) %>% forcats::fct_explicit_na(na_level = 'Unknown'), 
       outcome_admit = factor(outcome_admit, levels = levels_ynu) %>% forcats::fct_explicit_na(na_level = 'Unknown'), 
       date_consultation = as.Date(date_consultation), 
@@ -196,12 +196,6 @@ prepare_msf_dta <- function(dta){
       merge_vent   = recode_care(vent, outcome_vent), 
       merge_ecmo   = recode_care(ecmo, outcome_ecmo)) 
   
-  # Add geographical variables
-  dta <- dta %>% 
-    left_join(df_countries %>% select(continent, region, iso_a3, country), by = 'country') %>% 
-    mutate(
-      continent = as.factor(continent)
-    )
   
   # Filter date of consultation until the Sunday the EpiSitrep (see set_time_frame.R)
   # but keep NAs as there is a considerable number of rows with missing date of consultation data

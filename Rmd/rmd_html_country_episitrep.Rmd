@@ -46,7 +46,7 @@ source(file.path(path.R, "utils_modelling.R") , encoding = "UTF-8")
 # Get list of countries (with pop)
 df_countries <- get_countries_list()
 
-iso_country <- 'COD'
+iso_country <- 'AFG'
 
 name_country <- df_countries %>% 
   filter(iso_a3 == iso_country) %>% 
@@ -107,9 +107,9 @@ From this point all pairs of chunks are to be independent from each others
 
 
 
-# Epidemiological situation in the `r name_country` (external data)
+# Epidemiological situation in `r name_country` 
 
-## Evolution in cases and trends
+## Evolution in cases and trends (external data)
 
 <!-- Figure 1 - Epidemiological curves in cases and death -->
 ```{r plot-epicurve, fig.width=18*cm_to_in, fig.cap=paste('Covid-19 cases and deaths and trend estimations in', name_country), dpi=300}
@@ -123,10 +123,10 @@ From this point all pairs of chunks are to be independent from each others
 # 2. Cases (above) and deaths (below) in the last 30 days, with associated trend and confidence interval
 # 3. Cases (above) and deaths (below) in the last 12 days, with associated trend and confidence interval
 
-mdl_trend_cases_12d <- linear_model_cnt(dta_ecdc, series = 'cases', time_window = 12, last_date = date_max_report)
 mdl_trend_cases_30d <- linear_model_cnt(dta_ecdc, series = 'cases', time_window = 30, last_date = date_max_report)
-mdl_trend_deaths_12d <- linear_model_cnt(dta_ecdc, series = 'deaths', time_window = 12, last_date = date_max_report)
+mdl_trend_cases_12d <- linear_model_cnt(dta_ecdc, series = 'cases', time_window = 12, last_date = date_max_report)
 mdl_trend_deaths_30d <- linear_model_cnt(dta_ecdc, series = 'deaths', time_window = 30, last_date = date_max_report)
+mdl_trend_deaths_12d <- linear_model_cnt(dta_ecdc, series = 'deaths', time_window = 12, last_date = date_max_report)
 
 multiplot_counts_trends <- country_six_plots(dta = dta_ecdc, 
                                              mdl1_cases = mdl_trend_cases_30d, 
@@ -276,12 +276,12 @@ gtsave(gtbl_summary_country,
 
 gtbl_summary_country %>% 
   tab_header(
-    title = 'Summary cases and deaths and evolution of the epidemic in tha last 30 and 12 days')
+    title = paste('Summary cases and deaths and evolution of the epidemic in', name_country, 'in the last 30 and 12 days'))
 
 ```
 
 
-## Country situation in surveillance, social measures and testing 
+## Country situation in surveillance, social measures and testing (external data)
 
 ```{r, include=FALSE}
 # Priority ++
@@ -304,8 +304,8 @@ This section of the report analyses data reported by MSF in the reporting system
 ### Projects reporting data
 
 <!-- Table 2 – Projects reporting and associated numbers -->
-```{r}
-# Piority +++
+```{r table-summary-site, layout = "l-body-outset"}
+# Priority +++
 # by Francesco
 
 # Table with list of projects by country with counts by Covid status (confirmed, probable, suspected, not a case and unknown) and dates of first and last consultation/hospitalisation Projects reporting aggregated data are included in the table.
@@ -315,17 +315,21 @@ tbl_site_covid_status <- dta_msf_combined %>%
   select(-c(continent, country, country_lab)) %>%
   group_by(site_name) %>%
   summarise(
-    total = n(), 
-    confirmed_n = sum(Confirmed, na.rm = TRUE),
-    probable_n  = sum(Probable, na.rm = TRUE),
-    suspected_n = sum(Suspected, na.rm = TRUE),
-    not_case_n  = sum(`Not a case`, na.rm = TRUE),
-    unknown_n   = sum(Unknown, na.rm = TRUE),
-    confirmed_p = confirmed_n / total,
-    probable_p  = probable_n  / total,
-    suspected_p = suspected_n / total,
-    not_case_p  = not_case_n  / total,
-    unknown_p   = unknown_n   / total) %>%
+    total         = sum(Total, na.rm = TRUE), 
+    confirmed_n   = sum(Confirmed, na.rm = TRUE),
+    probable_n    = sum(Probable, na.rm = TRUE),
+    suspected_n   = sum(Suspected, na.rm = TRUE),
+    not_case_n    = sum(`Not a case`, na.rm = TRUE), 
+    not_suspect_n = sum(`Not a suspect`, na.rm = TRUE), 
+    unknown_n     = sum(Unknown, na.rm = TRUE)) %>% 
+  adorn_totals() %>% 
+  mutate(
+    confirmed_p   = confirmed_n   / total,
+    probable_p    = probable_n    / total,
+    suspected_p   = suspected_n   / total,
+    not_case_p    = not_case_n    / total, 
+    not_suspect_p = not_suspect_n / total,
+    unknown_p     = unknown_n     / total) %>%
   ungroup() %>%
   arrange(site_name)
 
@@ -334,25 +338,31 @@ tbl_site_dates <- dta_msf_combined %>%
   group_by(site_name) %>%
   summarise(
     date_adm_first = format(min(date, na.rm = TRUE), '%d-%m-%Y'),
-    date_adm_last  = format(max(date, na.rm = TRUE), '%d-%m-%Y'))
+    date_adm_last  = format(max(date, na.rm = TRUE), '%d-%m-%Y')) %>% 
+  add_row(site_name = 'Total', dta_msf_combined %>% 
+            summarise(
+              date_adm_first = format(min(date, na.rm = TRUE), '%d-%m-%Y'), 
+              date_adm_last  = format(max(date, na.rm = TRUE), '%d-%m-%Y')))
 
 
 gtbl_site_covid_status <- tbl_site_covid_status %>%
   left_join(tbl_site_dates) %>%
   gt() %>%
   cols_label(
-    country     = 'Site/Project',
-    total       = 'Total',
-    confirmed_n = 'n',
-    probable_n  = 'n',
-    suspected_n = 'n',
-    not_case_n  = 'n',
-    unknown_n   = 'n',
-    confirmed_p = '(%)',
-    probable_p  = '(%)',
-    suspected_p = '(%)',
-    not_case_p  = '(%)',
-    unknown_p   = '(%)',
+    site_name     = 'Site/Project',
+    total         = 'Total',
+    confirmed_n   = 'n',
+    probable_n    = 'n',
+    suspected_n   = 'n',
+    not_case_n    = 'n',
+    not_suspect_n = 'n',
+    unknown_n     = 'n',
+    confirmed_p   = '(%)',
+    probable_p    = '(%)',
+    suspected_p   = '(%)',
+    not_case_p    = '(%)',
+    not_suspect_p = '(%)',
+    unknown_p     = '(%)',
     date_adm_first = 'First',
     date_adm_last  = 'Last') %>%
   tab_spanner(
@@ -364,12 +374,15 @@ gtbl_site_covid_status <- tbl_site_covid_status %>%
   tab_spanner(
     label = html('Probable'),
     columns = starts_with('probable_')) %>%
-    tab_spanner(
+  tab_spanner(
     label = html('Suspected'),
     columns = starts_with('suspected_')) %>%
-    tab_spanner(
+  tab_spanner(
     label = html('Not a case'),
-    columns = starts_with('not_case_')) %>%
+    columns = starts_with('not_case_')) %>% 
+  tab_spanner(
+    label = html('Not a suspect'),
+    columns = starts_with('not_suspect_')) %>%
   tab_spanner(
     label = html('(Unknown)'),
     columns = starts_with('unknown_')) %>%
@@ -393,45 +406,30 @@ gtbl_site_covid_status <- tbl_site_covid_status %>%
   tab_style(
     style = list(
       cell_text(align = "left")),
-    locations = cells_column_labels(columns = ends_with('_p'))) %>%
-  summary_rows(
-    groups = TRUE,
-    columns = vars(total, confirmed_n, probable_n, suspected_n, not_case_n, unknown_n),
-    fns = list('Country Total' = ~ sum(.)),
-    missing_text = "",
-    formatter = fmt_number,
-    decimals = 0) %>%
-  grand_summary_rows(
-    columns = vars(total, confirmed_n, probable_n, suspected_n, not_case_n, unknown_n),
-    fns = list('Grand Total' = ~ sum(.)),
-    missing_text = "",
-    formatter = fmt_number,
-    decimals = 0) %>% 
+    locations = cells_column_labels(columns = ends_with('_p'))) %>% 
+  tab_style(
+    style = list(
+      cell_text(weight = "bold")),
+    locations = cells_body(
+      rows = site_name == 'Total')) %>% 
   tab_source_note(
     source_note = "(*) These data were reported as aggregated only and are not included in further analysis below") %>% 
   tab_options(
     column_labels.font.weight = "bold",
     row_group.font.weight = 'bold',
-    grand_summary_row.text_transform = 'uppercase',
-    data_row.padding = px(1),
-    row_group.padding = px(1),
-    summary_row.padding = px(1),
-    grand_summary_row.padding = px(1))
+    data_row.padding = px(1))
 
-gtsave(gtbl_countries_covid_status,
-       file.path(path.local.msf.tables, paste0('gtbl_countries_covid_status', '_', week_report, '.png'))) %>%
+gtsave(gtbl_site_covid_status,
+       file.path(path.local.country.week.tables, paste0('gtbl_site_covid_status', '_', week_report, '.png'))) %>%
   invisible()
 
+
+gtbl_site_covid_status
 
 ```
 
 
 ### Number of patients consulted or admitted in MSF Covid-19 facilities and their the evolution over time
-
-<!---BLOCK_MULTICOL_START--->
-Overall, `r ftext("X", fp_text_hightlight)` patients were consulted/admitted in MSF facilities since the beginning of the epidemic. Figure 2 below shows the weekly evolution of patient intake by covid status.
-<!---BLOCK_MULTICOL_STOP{widths: [`r rep(txt_col_width , 2)`], space: `r inter_col_width`, sep: false}--->
-
 
 <!-- Figure 2 - Weekly evolution of patient intake by covid status in country projects -->
 ```{r}
@@ -492,16 +490,6 @@ hist_epicurve_status
 
 ```
 
-<!---BLOCK_MULTICOL_START--->
-`r ftext("Text comment/interpretation etc. on the graphs and/or tables below.", fp_text_hightlight)`
-`r run_columnbreak()`
-`r ftext("The text is in two column format for easing the reading.", fp_text_hightlight)`
-<!---BLOCK_MULTICOL_STOP{widths: [`r rep(txt_col_width , 2)`], space: `r inter_col_width`, sep: false}--->
-
-```{r}
-# Display graph or table produced in the chunk above
-```
-
 
 ### Origin of patients
 
@@ -520,14 +508,77 @@ nce)].
 
 ### Major cares procedures in MSF facilities
 
-Overall, `r ftext("X", fp_text_hightlight)` patients were admitted in MSF facilities since the beginning of the epidemic, which represents `r ftext("Y%", fp_text_hightlight)` of the total patients who accessed to an MSF facility in the country.
-
 <!-- Table 3 – Overall proportions of cases in the different MSF projects -->
-```{r}
+```{r table-consultation-admission}
 # Priority +++
 # By Francesco
 
 #Tables of overall proportion of cases admitted or consulted, by covid status and by project
+
+tbl_consultation_admission <- dta_msf_linelist %>% 
+  prepare_msf_dta() %>% 
+  mutate(
+    admit = factor(merge_admit, levels = c('Yes', 'No', 'Unknown'), labels = c('admitted', 'non_admitted', 'unknown'))) %>% 
+  group_by(site_name, covid_status) %>% 
+  count(admit) %>% 
+  pivot_wider(names_from = admit, values_from = n,  values_fill = 0, names_sort = TRUE) %>% 
+  adorn_totals(c("col")) %>% 
+  mutate(
+    admitted_p = admitted / Total, 
+    non_admitted_p = non_admitted / Total) %>%
+  ungroup()
+
+gtbl_consultation_admission <- tbl_consultation_admission %>% 
+  gt(rowname_col = 'covid_status', 
+     groupname_col = 'site_name') %>% 
+  cols_label(
+    admitted     = 'n', 
+    non_admitted = 'n', 
+    Total = 'Total', 
+    admitted_p     = '(%)', 
+    non_admitted_p = '(%)') %>% 
+  tab_spanner(
+    label = 'Admitted', 
+    columns = starts_with('admitted')) %>% 
+  tab_spanner(
+    label = 'Non admitted', 
+    columns = starts_with('non_admitted')) %>% 
+  fmt_number(
+    columns = ends_with('_p'), 
+    decimals = 1, 
+    scale_by = 100, 
+    pattern = '({x})') %>% 
+    summary_rows(
+  groups = TRUE,
+    columns = vars(admitted, non_admitted, Total),
+    fns = list('Site Total' = ~ sum(.)),
+    missing_text = "",
+    formatter = fmt_number,
+    decimals = 0) %>% 
+  grand_summary_rows(
+    columns = vars(admitted, non_admitted, Total),
+    fns = list('Grand Total' = ~ sum(.)),
+    missing_text = "",
+    formatter = fmt_number,
+    decimals = 0) %>% 
+    tab_options(
+  column_labels.font.weight = "bold",
+    row_group.font.weight = 'bold',
+    grand_summary_row.text_transform = 'uppercase',
+    data_row.padding = px(1),
+    row_group.padding = px(1),
+    summary_row.padding = px(1),
+    grand_summary_row.padding = px(1))
+  
+
+gtsave(gtbl_consultation_admission,
+       file.path(path.local.country.week.tables, paste0('gtbl_consultation_admission', '_', week_report, '.png'))) %>%
+  invisible()
+
+
+gtbl_consultation_admission
+
+
 ```
 
 
@@ -604,22 +655,11 @@ ggsave(file.path(path.local.country.week.graphs, paste0('hist_epicurve_consult_a
        dpi = 320)
 
 hist_epicurve_consult_admit_site
-```
 
-<!---BLOCK_MULTICOL_START--->
-`r ftext("Text comment/interpretation etc. on the graphs and/or tables below.", fp_text_hightlight)`
-`r run_columnbreak()`
-`r ftext("The text is in two column format for easing the reading.", fp_text_hightlight)`
-<!---BLOCK_MULTICOL_STOP{widths: [`r rep(txt_col_width , 2)`], space: `r inter_col_width`, sep: false}--->
-
-```{r}
-# Display graph or table produced in the chunk above
 ```
 
 
 ### Covid-19 tests
-
-Overall, `r ftext("X", fp_text_hightlight)` patients were tested in MSF facilities since the beginning of the epidemic, which represents `r ftext("X", fp_text_hightlight)` of the total patients who were consulted/admitted.
 
 <!-- Figure 7 – Weekly evolution of number of tests, by test result and proportion of patients tested -->
 ```{r}
@@ -629,41 +669,166 @@ Overall, `r ftext("X", fp_text_hightlight)` patients were tested in MSF faciliti
 #Histogram of overall number of tests aggregated by week, broken down by test result, + curve displaying proportion of tested, filtered by OC/country/project
 ```
 
-<!---BLOCK_MULTICOL_START--->
-`r ftext("Text comment/interpretation etc. on the graphs and/or tables below.", fp_text_hightlight)`
-`r run_columnbreak()`
-`r ftext("The text is in two column format for easing the reading.", fp_text_hightlight)`
-<!---BLOCK_MULTICOL_STOP{widths: [`r rep(txt_col_width , 2)`], space: `r inter_col_width`, sep: false}--->
-
-```{r}
-# Display graph or table produced in the chunk above
-```
-
 
 ## Characteristics of patients consulted/admitted in MSF Covid-19 facilities 
 <!-- including non-cases -->
 
-
-Overall, `r ftext("X", fp_text_hightlight)` asymptomatic patients were classified suspect, probable or confirmed for covid19 since the beginning of the epidemic (`r ftext("Y", fp_text_hightlight)` in the last `r ftext("[week/two weeks/month]", fp_text_hightlight)`). `r ftext("Z", fp_text_hightlight)` of them were confirmed (`r ftext("W", fp_text_hightlight)` in the last week). 
-
-
 <!-- Table 4 – Age and sex distribution by covid status in MSF projects -->
-```{r}
+```{r table-general-characteristics, layout = "l-page"}
 # Priority +++
 # by Francesco
 
-# Table displaying age (median, IQR, min-max) and sex distribution, by Covid19 status, filtered by OC /country/ project
+# Table displaying age (median, IQR, min-max) and sex distribution, by Covid19 status, filtered by project
+
+
+tbl_general_characteristics_by_status <- dta_msf_linelist %>% 
+  prepare_msf_dta() %>% 
+  select(covid_status, age_in_years, age_5gp, sex, Comcond_present) %>%
+  group_by(covid_status) %>%
+  summarise(
+    age_total   = paste0(sum(!is.na(age_in_years)) , '/',  n()),  
+    age_min_max = paste0(min(age_in_years, na.rm = TRUE), ' - ', max(age_in_years, na.rm = TRUE)),
+    age_median  = format(round(median(age_in_years, na.rm = TRUE), digits = 1), nsmall = 1),
+    age_gp1     = freq_prct(age_5gp, '0-4'),
+    age_gp2     = freq_prct(age_5gp, '5-14'),
+    age_gp3     = freq_prct(age_5gp, '15-44'),
+    age_gp4     = freq_prct(age_5gp, '45-64'),
+    age_gp5     = freq_prct(age_5gp, '65+'),
+    sex_total   = paste0(sum(!is.na(sex)) , '/',  n()),
+    sex_males   = sum(sex == 'M', na.rm = TRUE),
+    sex_females = sum(sex == 'F', na.rm = TRUE),
+    sex_ratio   = format(round(sum(sex == 'M', na.rm = TRUE)/sum(sex == 'F', na.rm = TRUE), digits = 1), nsmall = 1),
+    comorbidity_total = paste0(sum(!is.na(Comcond_present)) , '/',  n()),
+    comorbidity_presence = freq_prct(Comcond_present, 1))
+
+
+tbl_general_characteristics_total <- dta_msf_linelist %>% 
+  prepare_msf_dta() %>% 
+  select(covid_status, age_in_years, age_5gp, sex, Comcond_present) %>%
+  summarise(
+    age_total   = paste0(sum(!is.na(age_in_years)) , '/',  n()),  
+    age_min_max = paste0(min(age_in_years, na.rm = TRUE), ' - ', max(age_in_years, na.rm = TRUE)),
+    age_median  = format(round(median(age_in_years, na.rm = TRUE), digits = 1), nsmall = 1),
+    age_gp1     = freq_prct(age_5gp, '0-4'),
+    age_gp2     = freq_prct(age_5gp, '5-14'),
+    age_gp3     = freq_prct(age_5gp, '15-44'),
+    age_gp4     = freq_prct(age_5gp, '45-64'),
+    age_gp5     = freq_prct(age_5gp, '65+'),
+    sex_total   = paste0(sum(!is.na(sex)) , '/',  n()),
+    sex_males   = sum(sex == 'M', na.rm = TRUE),
+    sex_females = sum(sex == 'F', na.rm = TRUE),
+    sex_ratio   = format(round(sum(sex == 'M', na.rm = TRUE)/sum(sex == 'F', na.rm = TRUE), digits = 1), nsmall = 1),
+    comorbidity_total = paste0(sum(!is.na(Comcond_present)) , '/',  n()),
+    comorbidity_presence = freq_prct(Comcond_present, 1)) %>% 
+  mutate(
+    covid_status = 'Total')
+
+
+tbl_general_characteristics <- tbl_general_characteristics_by_status %>% 
+  add_row(tbl_general_characteristics_total) %>% 
+  mutate(
+    covid_status = factor(covid_status, levels = c('Confirmed', 'Probable', 'Suspected', 'Not a case', 'Not a suspect', 'Unknown', 'Total')))
+
+vars_age <- tibble(levels = tbl_general_characteristics %>% select(starts_with('age_')) %>% names(),
+                   labels = c('Totals with age information, n/N', 'Minimum - maximum', 'Median', '0 - 5, n (%)', '5 - 15, n (%)', '15 - 45, n (%)', '45 - 65, n (%)', '65+, n (%)'))
+
+vars_sex <- tibble(levels = tbl_general_characteristics %>% select(starts_with('sex_')) %>% names(),
+                   labels = c('Totals with sex information, n/N', 'Men, n', 'Women, n', 'Sex ratio (M/F)'))
+
+vars_comorbidities <- tibble(levels = tbl_general_characteristics %>% select(starts_with('comorbidity_')) %>% names(),
+                             labels = c('Totals with comorbidity information, n/N', 'Presence of at least one comorbidity, n (%)'))
+
+gtbl_general_characteristics <- tbl_general_characteristics %>%
+  gather(characteristics, values, -covid_status, factor_key = TRUE) %>%
+  spread(covid_status, values) %>%
+  mutate(type_characteristic = case_when(
+    characteristics ==  'total' ~ NA_character_,
+    characteristics %in% vars_age$levels ~ 'Age (in years)',
+    characteristics %in% vars_sex$levels ~ 'Sex',
+    characteristics %in% vars_comorbidities$levels ~ 'Comorbidities')) %>%
+  mutate(
+    characteristics = factor(characteristics,
+                             levels = c(vars_age$levels, vars_sex$levels, vars_comorbidities$levels),
+                             labels = c(vars_age$labels, vars_sex$labels, vars_comorbidities$labels))) %>%
+  gt(rowname_col = "characteristics",
+     groupname_col = "type_characteristic") %>%
+  cols_label(
+    characteristics = 'Characteristics') %>%
+  cols_align(
+    align = 'left',
+    columns = vars(characteristics)) %>%
+  cols_align(
+    align = 'center',
+    columns = vars(Confirmed, Probable, Suspected, `Not a case`, `Not a suspect`, `Unknown`)) %>% 
+  tab_options(
+    column_labels.font.weight = "bold",
+    row_group.font.weight = 'bold',
+    data_row.padding = px(2),
+    row_group.padding = px(2))
+
+gtsave(gtbl_general_characteristics,
+       file.path(path.local.country.week.tables, paste0('gtbl_general_characteristics','_', week_report, '.png'))) %>%
+  invisible()
+
+
+
+gtbl_general_characteristics
+
 ```
 
-<!---BLOCK_MULTICOL_START--->
-`r ftext("Text comment/interpretation etc. on the graphs and/or tables below.", fp_text_hightlight)`
-`r run_columnbreak()`
-`r ftext("The text is in two column format for easing the reading.", fp_text_hightlight)`
-<!---BLOCK_MULTICOL_STOP{widths: [`r rep(txt_col_width , 2)`], space: `r inter_col_width`, sep: false}--->
 
-```{r}
-# Display graph or table produced in the chunk above
+```{r table-general-characteristics-by-site, layout="l-body-outset"}
+
+# Priority +++
+# by Francesco
+
+# Table displaying age (median, IQR, min-max) and sex distribution, by Covid19 status, filtered by project
+
+tbl_general_characteristics_by_site <- dta_msf_linelist %>% 
+  prepare_msf_dta() %>% 
+  select(site_name, age_in_years, age_5gp, sex, Comcond_present) %>%
+  group_by(site_name) %>%
+  summarise(
+    age_median  = format(round(median(age_in_years, na.rm = TRUE), digits = 1), nsmall = 1), 
+    age_iqr     = paste0('(', quantile(age_in_years, 0.25, na.rm = TRUE), ' - ', quantile(age_in_years, 0.75, na.rm = TRUE), ')'), 
+    age_min_max = paste0('[', min(age_in_years, na.rm = TRUE), ' - ', max(age_in_years, na.rm = TRUE), ']'), 
+    sex_males   = sum(sex == 'M', na.rm = TRUE),
+    sex_females = sum(sex == 'F', na.rm = TRUE),
+    sex_ratio   = format(round(sum(sex == 'M', na.rm = TRUE)/sum(sex == 'F', na.rm = TRUE), digits = 1), nsmall = 1))
+
+gtbl_general_characteristics_by_site <- tbl_general_characteristics_by_site %>% 
+  gt() %>% 
+  cols_label(
+    site_name = 'Site/Project', 
+    age_median = 'median', 
+    age_iqr = '(25-75% IQR)', 
+    age_min_max = '[min-max]', 
+    sex_males = 'Males', 
+    sex_females = 'Females', 
+    sex_ratio = 'M/F ratio') %>% 
+  tab_spanner(
+    label = 'Age', 
+    columns = starts_with('age')) %>% 
+  tab_spanner(
+    label = 'Sex', 
+    columns = starts_with('sex')) %>% 
+  tab_options(
+    column_labels.font.weight = "bold",
+    row_group.font.weight = 'bold',
+    data_row.padding = px(2),
+    row_group.padding = px(2))
+
+
+gtsave(gtbl_general_characteristics_by_site,
+       file.path(path.local.country.week.tables, paste0('gtbl_general_characteristics_by_site','_', week_report, '.png'))) %>%
+  invisible()
+
+
+
+gtbl_general_characteristics_by_site
+
 ```
+
 
 
 <!-- Figure 8 – Frequency and proportion of symptoms in covid19 patients presenting in MSF facilities, by covid19 status -->
@@ -713,16 +878,6 @@ ggplot(df_symptoms, aes(fct_reorder(symptom, prop), prop)) +
 
 ```
 
-<!---BLOCK_MULTICOL_START--->
-`r ftext("Text comment/interpretation etc. on the graphs and/or tables below.", fp_text_hightlight)`
-`r run_columnbreak()`
-`r ftext("The text is in two column format for easing the reading.", fp_text_hightlight)`
-<!---BLOCK_MULTICOL_STOP{widths: [`r rep(txt_col_width , 2)`], space: `r inter_col_width`, sep: false}--->
-
-```{r}
-# Display graph or table produced in the chunk above
-```
-
 
 <!-- Figure 9 – Frequency and proportion of morbidities in non-case covid-19 patients -->
 ```{r}
@@ -731,41 +886,97 @@ ggplot(df_symptoms, aes(fct_reorder(symptom, prop), prop)) +
 # Histogram? (I think it is better a table) with frequency and proportion of recorded diagnosis, filtered by OC /country/ project
 ```
 
-<!---BLOCK_MULTICOL_START--->
-`r ftext("Text comment/interpretation etc. on the graphs and/or tables below.", fp_text_hightlight)`
-`r run_columnbreak()`
-`r ftext("The text is in two column format for easing the reading.", fp_text_hightlight)`
-<!---BLOCK_MULTICOL_STOP{widths: [`r rep(txt_col_width , 2)`], space: `r inter_col_width`, sep: false}--->
-
-```{r}
-# Display graph or table produced in the chunk above
-```
-
 
 <!-- Figure 10 – Case Fatality Risk by covid status and project -->
 ```{r}
 # Priority +++
 # by Francesco
 
-# Case Fatality Risk by covid status and project, filtered by OC /country/ project
+# Case Fatality Risk by covid status and project, filtered by project
+
+dta <- dta_msf_linelist %>% 
+  prepare_msf_dta()
+
+tbl_cfr_site <- dta %>%
+  select(site_name, outcome_status) %>%
+  filter(outcome_status %in% c('Cured', 'Died')) %>%
+  group_by(site_name) %>%
+  summarise(
+    totals_Total = paste0(sum(outcome_status == 'Died'), '/', n()),
+    died_p_Total = mean(outcome_status == 'Died')) %>% 
+  ungroup()
+
+tbl_cfr_status_site <- dta %>% 
+  select(site_name, covid_status, outcome_status) %>%
+  filter(outcome_status %in% c('Cured', 'Died')) %>%
+  group_by(site_name, covid_status) %>%
+  summarise(
+    totals = paste0(sum(outcome_status == 'Died'), '/', n()),
+    died_p = mean(outcome_status == 'Died')) %>% 
+  ungroup() %>% 
+  pivot_wider(names_from = covid_status, values_from = c(totals, died_p))
+
+gtbl_cfr_status_site <- tbl_cfr_status_site %>%
+  full_join(tbl_cfr_site) %>% 
+  select(site_name, totals_Confirmed, totals_Suspected, `totals_Not a case`, died_p_Confirmed, died_p_Suspected, `died_p_Not a case`, totals_Total, died_p_Total) %>% 
+  gt() %>%
+  cols_label(
+    site_name           = 'Site/project', 
+    totals_Confirmed    = 'n/N', 
+    totals_Suspected    = 'n/N',
+    `totals_Not a case` = 'n/N', 
+    totals_Total        = 'n/N',
+    died_p_Confirmed    = '(%)',
+    died_p_Suspected    = '(%)',
+    `died_p_Not a case` = '(%)', 
+    died_p_Total        = '(%)') %>%
+  tab_spanner(
+    label = 'Confirmed',
+    columns = ends_with('Confirmed')) %>%
+  tab_spanner(
+    label = 'Suspected',
+    columns = ends_with('Suspected')) %>%
+  tab_spanner(
+    label = 'Not a case',
+    columns = ends_with('Not a case')) %>% 
+  tab_spanner(
+    label = 'Total',
+    columns = ends_with('_Total')) %>%
+  fmt_number(
+    columns = starts_with('died_p_'),
+    decimals = 1,
+    scale_by = 100,
+    pattern = '({x})') %>%
+  fmt_missing(
+    columns = starts_with('totals_'),
+    missing_text = "0/0") %>%
+  fmt_missing(
+    columns = starts_with('died_p_'),
+    missing_text = "---") %>%
+  cols_align(
+    align = 'left',
+    columns = vars(site_name)) %>%
+  cols_align(
+    align = 'right',
+    columns = starts_with('totals')) %>%
+  tab_options(
+    column_labels.font.weight = "bold",
+    data_row.padding = px(2),
+    row_group.padding = px(2))
+
+gtsave(gtbl_cfr_status_site,
+       file.path(path.local.country.week.tables, paste0('gtbl_cfr_status_site','_', week_report, '.png'))) %>%
+  invisible()
+
+
+gtbl_cfr_status_site
+
 ```
-
-<!---BLOCK_MULTICOL_START--->
-`r ftext("Text comment/interpretation etc. on the graphs and/or tables below.", fp_text_hightlight)`
-`r run_columnbreak()`
-`r ftext("The text is in two column format for easing the reading.", fp_text_hightlight)`
-<!---BLOCK_MULTICOL_STOP{widths: [`r rep(txt_col_width , 2)`], space: `r inter_col_width`, sep: false}--->
-
-```{r}
-# Display graph or table produced in the chunk above
-```
-
 
 
 ## Description of Covid19 [confirmed/probable/suspect] patients
 ### Characteristics of the patients
 
-`r ftext("X [confirmed/probable/suspect]", fp_text_hightlight)` patients were recorded in MSF facilities.
 
 <!-- Figure 11 – Age and sex pyramid of [confirmed/probable/suspect] patients in MSF facilities -->
 ```{r}
@@ -792,22 +1003,12 @@ pyramid_age_sex_confirmed <- ggplot(tbl_pyramid_confirmed, aes(x = age_group, y 
   labs(x = "Age Group", y = "Confirmed Patients", caption = glue::glue("Missing Data: Age {m_age_sex$age}, Sex {m_age_sex$sex}"))  +
   guides(y.sec = guide_axis_label_trans(~paste(.x))) # show age group labels on both axis
 
-ggsave(file.path(path.local.msf.graphs, paste0('pyramid_age_sex_confirmed', '_', week_report, '.png')),
+ggsave(file.path(path.local.country.week.graphs, paste0('pyramid_age_sex_confirmed', '_', week_report, '.png')),
        plot = pyramid_age_sex_confirmed,
        width = 8,
        height = 6)
 
 pyramid_age_sex_confirmed
-```
-
-<!---BLOCK_MULTICOL_START--->
-`r ftext("Text comment/interpretation etc. on the graphs and/or tables below.", fp_text_hightlight)`
-`r run_columnbreak()`
-`r ftext("The text is in two column format for easing the reading.", fp_text_hightlight)`
-<!---BLOCK_MULTICOL_STOP{widths: [`r rep(txt_col_width , 2)`], space: `r inter_col_width`, sep: false}--->
-
-```{r}
-# Display graph or table produced in the chunk above
 ```
 
 
@@ -834,23 +1035,13 @@ pyramid_age_sex_confirmed_site <- ggplot(tbl_pyramid_confirmed_site, aes(x = age
   theme(legend.position = "top") +
   labs(x = "Age Group", y = "Confirmed Patients", caption = glue::glue("Missing Data: Age {m_age_sex$age}, Sex {m_age_sex$sex}")) 
 
-ggsave(file.path(path.local.msf.graphs, paste0('pyramid_age_sex_confirmed_site', '_', week_report, '.png')),
+ggsave(file.path(path.local.country.week.graphs, paste0('pyramid_age_sex_confirmed_site', '_', week_report, '.png')),
        plot = pyramid_age_sex_confirmed_site,
        width = 8,
        height = 8)
 
 
 pyramid_age_sex_confirmed_site
-```
-
-<!---BLOCK_MULTICOL_START--->
-`r ftext("Text comment/interpretation etc. on the graphs and/or tables below.", fp_text_hightlight)`
-`r run_columnbreak()`
-`r ftext("The text is in two column format for easing the reading.", fp_text_hightlight)`
-<!---BLOCK_MULTICOL_STOP{widths: [`r rep(txt_col_width , 2)`], space: `r inter_col_width`, sep: false}--->
-
-```{r}
-# Display graph or table produced in the chunk above
 ```
 
 
@@ -866,16 +1057,6 @@ Overall, X patients recorded a type of exposure among patients received in MSF f
 # [Graph displaying number and proportion of different types of exposure of [confirmed/probable/suspect]cases (working in healthcare facility, visiting a healthcare facility, through contact with confirmed case, in a different country), filtered by OC /country/ project]
 ```
 
-<!---BLOCK_MULTICOL_START--->
-`r ftext("Text comment/interpretation etc. on the graphs and/or tables below.", fp_text_hightlight)`
-`r run_columnbreak()`
-`r ftext("The text is in two column format for easing the reading.", fp_text_hightlight)`
-<!---BLOCK_MULTICOL_STOP{widths: [`r rep(txt_col_width , 2)`], space: `r inter_col_width`, sep: false}--->
-
-```{r}
-# Display graph or table produced in the chunk above
-```
-
 
 ### Underlying conditions
 <!-- Frequency and proportions of the number of comorbidities recorded among [confirmed/probable/suspect] patients in MSF facilities -->
@@ -884,16 +1065,6 @@ Overall, X patients recorded a type of exposure among patients received in MSF f
 # by Francesco
 
 #[Table of frequency and proportions of [confirmed/probable/suspect] cases cases with 0, 1, 2, 3 or more comorbidities, filtered by OC /country/ project]
-```
-
-<!---BLOCK_MULTICOL_START--->
-`r ftext("Text comment/interpretation etc. on the graphs and/or tables below.", fp_text_hightlight)`
-`r run_columnbreak()`
-`r ftext("The text is in two column format for easing the reading.", fp_text_hightlight)`
-<!---BLOCK_MULTICOL_STOP{widths: [`r rep(txt_col_width , 2)`], space: `r inter_col_width`, sep: false}--->
-
-```{r}
-# Display graph or table produced in the chunk above
 ```
 
 
@@ -905,15 +1076,6 @@ Overall, X patients recorded a type of exposure among patients received in MSF f
 
 ```
 
-<!---BLOCK_MULTICOL_START--->
-`r ftext("Text comment/interpretation etc. on the graphs and/or tables below.", fp_text_hightlight)`
-`r run_columnbreak()`
-`r ftext("The text is in two column format for easing the reading.", fp_text_hightlight)`
-<!---BLOCK_MULTICOL_STOP{widths: [`r rep(txt_col_width , 2)`], space: `r inter_col_width`, sep: false}--->
-
-```{r}
-# Display graph or table produced in the chunk above
-```
 
 
 ### Level of care received
@@ -956,22 +1118,15 @@ To be completed as appropriate -->
 ```
 
 
-<!---BLOCK_MULTICOL_START--->
-`r ftext("Text comment/interpretation etc. on the graphs and/or tables below.", fp_text_hightlight)`
-`r run_columnbreak()`
-`r ftext("The text is in two column format for easing the reading.", fp_text_hightlight)`
-<!---BLOCK_MULTICOL_STOP{widths: [`r rep(txt_col_width , 2)`], space: `r inter_col_width`, sep: false}--->
-
-```{r}
-# Display graph or table produced in the chunk above
-```
-
-
 <!-- Case fatality risk in the different age groups among [confirmed/probable/suspect] patients in MSF facilities -->
-```{r}
+```{r, eval=FALSE}
 # by Paul
 
 #[Graph displaying the Case Fatality Risk, by age groups, with respective confidence intervals (died and recovered patients), filtered by OC /country/ project]
+
+
+# !!! @Paul we need to use merge_admit (created by prepare_msf_dta) instead of patcourse_admit or outcome_patcourse_admit
+# Note that I put eval = FALSE because knit got stuck in this chunck
 
 df_severity <- dta_msf_linelist %>% 
   filter(age_group != "Unknown", MSF_covid_status %in% c("Confirmed", "Probable", "Suspect")) %>% #, MSF_covid_status == "Confirmed"
@@ -1002,7 +1157,7 @@ dots_cfr_agegroup <- ggplot(df_severity, aes(x = age_group)) +
   scale_y_continuous(breaks = seq(0, 1, 0.2), limits = c(0, 1), labels = scales::percent_format(accuracy = 1), sec.axis = dup_axis(name = NULL)) +  
   labs(x = "Age Group", y = "CFR", caption = "CFR = deaths / known outcomes (cured + died)\nLine range shows binomial 95% confidence intervals") 
 
-ggsave(file.path(path.local.msf.graphs, paste0('dots_cfr_agegroup', '_', week_report, '.png')),
+ggsave(file.path(path.local.country.week.graphs, paste0('dots_cfr_agegroup', '_', week_report, '.png')),
        plot = dots_cfr_agegroup,
        scale = 1.1,
        dpi = 320)
@@ -1011,16 +1166,6 @@ ggsave(file.path(path.local.msf.graphs, paste0('dots_cfr_agegroup', '_', week_re
 dots_cfr_agegroup
 ```
 
-
-<!---BLOCK_MULTICOL_START--->
-`r ftext("Text comment/interpretation etc. on the graphs and/or tables below.", fp_text_hightlight)`
-`r run_columnbreak()`
-`r ftext("The text is in two column format for easing the reading.", fp_text_hightlight)`
-<!---BLOCK_MULTICOL_STOP{widths: [`r rep(txt_col_width , 2)`], space: `r inter_col_width`, sep: false}--->
-
-```{r}
-# Display graph or table produced in the chunk above
-```
 
 
 ### Other operational indicators
@@ -1049,14 +1194,16 @@ boxplot_delay_admission_week <- ggplot(dta_delay, aes(epi_week_consultation, MSF
     ) +
   labs(y = "Onset to admission delay (days)")
 
-ggsave(file.path(path.local.msf.graphs, paste0('boxplot_delay_admission_week', '_', week_report, '.png')),
+ggsave(file.path(path.local.country.week.graphs, paste0('boxplot_delay_admission_week', '_', week_report, '.png')),
        plot = boxplot_delay_admission_week, 
        width = 6, 
        height = 4, 
        scale = 1.1,
        dpi = 320)
 
+
 boxplot_delay_admission_week
+
 ```
 
 <!-- Weekly distribution of delay from symptoms to consultation/admission of covid19 patients in each of the MSF facilities -->
@@ -1098,7 +1245,7 @@ boxplot_length_stay_week <- ggplot(tbl_length_stay, aes(epi_week_consultation, M
   ) +
   labs(y = "Length of stay in hospital (days)", caption = "Latest 2 weeks omitted for data completeness purposes")
 
-ggsave(file.path(path.local.msf.graphs, paste0('boxplot_length_stay_week', '_', week_report, '.png')),
+ggsave(file.path(path.local.country.week.graphs, paste0('boxplot_length_stay_week', '_', week_report, '.png')),
        plot = boxplot_length_stay_week, 
        width = 6, 
        height = 4, 
@@ -1129,15 +1276,5 @@ To be completed as appropriate -->
 # [Table displaying bed occupancy rate, aggregated by week, by projects]
 ```
 
-
-<!---BLOCK_MULTICOL_START--->
-`r ftext("Text comment/interpretation etc. on the graphs and/or tables below.", fp_text_hightlight)`
-`r run_columnbreak()`
-`r ftext("The text is in two column format for easing the reading.", fp_text_hightlight)`
-<!---BLOCK_MULTICOL_STOP{widths: [`r rep(txt_col_width , 2)`], space: `r inter_col_width`, sep: false}--->
-
-```{r}
-# Display graph or table produced in the chunk above
-```
 
 

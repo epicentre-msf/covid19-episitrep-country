@@ -50,7 +50,8 @@ linear_model_cnt <- function(dta, iso_country = NULL, series, last_date, time_wi
   } else {
     mdl <- NA_character_
     
-    mdl_preds  <- tibble(fit = rep(NA_real_, dim(dta)[1]), 
+    mdl_preds  <- tibble(ma  = rep(NA_real_, dim(dta)[1]), 
+                         fit = rep(NA_real_, dim(dta)[1]), 
                          lwr = rep(NA_real_, dim(dta)[1]), 
                          upr = rep(NA_real_, dim(dta)[1]))
     

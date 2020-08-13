@@ -27,7 +27,10 @@ editor_options:
 knitr::opts_chunk$set(echo = FALSE, 
                       warning = FALSE, 
                       message = FALSE, 
-                      fig.cap = TRUE)
+                      fig.cap = TRUE,
+                      fig.width = 6,
+                      fig.height = 4
+                      )
 
 # Set environment
 source(here::here('R', 'setup.r'), encoding = 'UTF-8')
@@ -51,6 +54,8 @@ iso_country <- 'AFG'
 name_country <- df_countries %>% 
   filter(iso_a3 == iso_country) %>% 
   pull(country)
+
+include_status <- c("Confirmed", "Probable", "Suspected")
 
 # Default folder structure for country and week
 source(file.path(path.R, "set_time_frame.R")  , encoding = "UTF-8")
@@ -461,7 +466,7 @@ hist_epicurve_status
 ```
 
 <!-- Figure 3 - Weekly evolution of patient intake by covid status in each of the country projects -->
-```{r}
+```{r fig.height=6}
 # By Paul 
 
 # Multifacet Histograms of number of patients consulted/admitted weekly for each MSF facility, filtered on OC/country/project, displayed by date of consultation and broken down by covid status]
@@ -482,7 +487,7 @@ hist_epicurve_status <- dta_msf_linelist %>%
 ggsave(file.path(path.local.country.week.graphs, paste0('hist_epicurve_consult_admit', '_', week_report, '.png')),
        plot = hist_epicurve_status, 
        width = 6, 
-       height = 4, 
+       height = 6, 
        scale = 1.1,
        dpi = 320)
 
@@ -622,7 +627,7 @@ hist_epicurve_consult_admit
 ```
 
 <!-- Figure 6 - Weekly evolution of patient intake by covid status in each of the country projects -->
-```{r}
+```{r fig.height=6}
 # Priority +++
 # by Paul
 
@@ -650,7 +655,7 @@ hist_epicurve_consult_admit_site <- dta_msf_linelist %>%
 ggsave(file.path(path.local.country.week.graphs, paste0('hist_epicurve_consult_admit', '_', week_report, '.png')),
        plot = hist_epicurve_consult_admit_site, 
        width = 6, 
-       height = 4, 
+       height = 6, 
        scale = 1.1,
        dpi = 320)
 
@@ -869,13 +874,21 @@ df_symptoms <- dta_msf_linelist %>%
       arrange(-prop)
 
 
-ggplot(df_symptoms, aes(fct_reorder(symptom, prop), prop)) +
+plot_symptoms <- ggplot(df_symptoms, aes(fct_reorder(symptom, prop), prop)) +
   geom_col(fill = "steelblue") +
-  geom_text(aes(label = glue::glue("{yes}/{total}"), y = prop + .05), colour = "black", size = 4) +
+  geom_text(aes(label = glue::glue("{yes}/{total}"), y = prop ), colour = "black", size = 4, hjust = -.02) + #+ .05
   scale_y_continuous(labels = scales::percent_format(accuracy = 1), expand = expansion(mult = c(0, 0.1))) +
   coord_flip() +
   labs(y = "Proportion", x = NULL)
 
+ggsave(file.path(path.local.country.week.graphs, paste0('plot_symptoms', '_', week_report, '.png')),
+       plot = plot_symptoms,
+       width = 6, 
+       height = 4, 
+       scale = 1.1,
+       dpi = 320)
+
+plot_symptoms
 ```
 
 
@@ -975,8 +988,8 @@ gtbl_cfr_status_site
 
 
 ## Description of Covid19 [confirmed/probable/suspect] patients
-### Characteristics of the patients
 
+### Age/Sex pyramid
 
 <!-- Figure 11 – Age and sex pyramid of [confirmed/probable/suspect] patients in MSF facilities -->
 ```{r}
@@ -984,11 +997,15 @@ gtbl_cfr_status_site
 
 # Age/sex pyramid of patients, filtered by OC /country/ project
 
-m_age_sex <- dta_msf_linelist %>% filter(MSF_covid_status == "Confirmed") %>% summarise(age = sum(is.na(age_in_years)), sex = sum(is.na(patinfo_sex)))
+m_age_sex <- dta_msf_linelist %>% 
+  filter(MSF_covid_status %in% include_status) %>% 
+  summarise(age = sum(age_in_years == "Unknown"), sex = sum(patinfo_sex == "Unknown"))
+
+asp_caption <- ifelse(sum(m_age_sex$age, m_age_sex$sex) > 0, glue::glue("Missing Data: Age {m_age_sex$age}, Sex {m_age_sex$sex}"), NULL)
 
 tbl_pyramid_confirmed <- dta_msf_linelist %>% 
-  drop_na(patinfo_sex, age_group) %>% 
-  filter(MSF_covid_status %in% c("Confirmed")) %>% 
+  filter(age_in_years != "Unknown", patinfo_sex != "Unknown") %>% 
+  filter(MSF_covid_status %in% include_status) %>% 
   count(patinfo_sex, age_group) %>% 
   mutate(n = if_else(patinfo_sex == "M", -n, n))
 
@@ -1000,7 +1017,7 @@ pyramid_age_sex_confirmed <- ggplot(tbl_pyramid_confirmed, aes(x = age_group, y 
   scale_fill_manual(name = NULL, values = c("#4E79A7FF", "#A0CBE8FF"), breaks = c("M", "F"), labels = c("Males", "Females")) +
   scale_y_continuous(limits = pyramid_limits, breaks = pyramid_brks, label = abs) + 
   theme(legend.position = "top") +
-  labs(x = "Age Group", y = "Confirmed Patients", caption = glue::glue("Missing Data: Age {m_age_sex$age}, Sex {m_age_sex$sex}"))  +
+  labs(x = "Age Group", y = "Patients", caption = asp_caption)  +
   guides(y.sec = guide_axis_label_trans(~paste(.x))) # show age group labels on both axis
 
 ggsave(file.path(path.local.country.week.graphs, paste0('pyramid_age_sex_confirmed', '_', week_report, '.png')),
@@ -1011,16 +1028,17 @@ ggsave(file.path(path.local.country.week.graphs, paste0('pyramid_age_sex_confirm
 pyramid_age_sex_confirmed
 ```
 
+### Age/Sex pyramid by site
 
 <!-- Figure 12 – Age and sex pyramid of [confirmed/probable/suspect] patients in each of the MSF facilities -->
-```{r}
+```{r fig.height=6}
 # by Paul
 
 # [Multifacet Age/sex pyramid of patients for each project, filtered by OC /country/ project]
 
 tbl_pyramid_confirmed_site <- dta_msf_linelist %>% 
   drop_na(patinfo_sex, age_group) %>% 
-  filter(MSF_covid_status %in% c("Confirmed")) %>% 
+  filter(MSF_covid_status %in% include_status) %>% 
   count(site_name, patinfo_sex, age_group) %>% 
   mutate(n = if_else(patinfo_sex == "M", -n, n))
 
@@ -1033,7 +1051,7 @@ pyramid_age_sex_confirmed_site <- ggplot(tbl_pyramid_confirmed_site, aes(x = age
   scale_fill_manual(name = NULL, values = c("#4E79A7FF", "#A0CBE8FF"), breaks = c("M", "F"), labels = c("Males", "Females")) +
   scale_y_continuous(label = abs, limits = pyramid_limits) + 
   theme(legend.position = "top") +
-  labs(x = "Age Group", y = "Confirmed Patients", caption = glue::glue("Missing Data: Age {m_age_sex$age}, Sex {m_age_sex$sex}")) 
+  labs(x = "Age Group", y = "Patients", caption = asp_caption) 
 
 ggsave(file.path(path.local.country.week.graphs, paste0('pyramid_age_sex_confirmed_site', '_', week_report, '.png')),
        plot = pyramid_age_sex_confirmed_site,
@@ -1129,7 +1147,7 @@ To be completed as appropriate -->
 # Note that I put eval = FALSE because knit got stuck in this chunck
 
 df_severity <- dta_msf_linelist %>% 
-  filter(age_group != "Unknown", MSF_covid_status %in% c("Confirmed", "Probable", "Suspect")) %>% #, MSF_covid_status == "Confirmed"
+  filter(age_group != "Unknown", MSF_covid_status %in% include_status) %>% 
   group_by(age_group) %>% 
   summarize(
     n = n(),
@@ -1159,6 +1177,8 @@ dots_cfr_agegroup <- ggplot(df_severity, aes(x = age_group)) +
 
 ggsave(file.path(path.local.country.week.graphs, paste0('dots_cfr_agegroup', '_', week_report, '.png')),
        plot = dots_cfr_agegroup,
+       width = 6, 
+       height = 4, 
        scale = 1.1,
        dpi = 320)
 
@@ -1182,7 +1202,7 @@ The overall delay from symptoms to consultation/admission in MSF facilities was 
 #[Box plot displaying distribution of delay from symptoms onset to consultation/admission, aggregated by week, with trend and filtered by OC /country/ project]
 
 dta_delay <- dta_msf_linelist %>%
-  filter(MSF_covid_status %in% c("Confirmed", "Suspected", "Probable")) %>%
+  #filter(MSF_covid_status %in% include_status) %>% # Is status important for this metric?
   drop_na(epi_week_consultation, MSF_delay_before_admission) %>%
   filter(MSF_delay_before_admission >= 0, MSF_delay_before_admission <= 50) # filter any delays over 50 days
   
@@ -1212,6 +1232,24 @@ boxplot_delay_admission_week
 # by Paul
 
 # [Multifacet Box plot displaying distribution of delay from symptoms onset to consultation/admission, aggregated by week, with trend and filtered by OC /country/ project]
+boxplot_delay_admission_week_site <- ggplot(dta_delay, aes(epi_week_consultation, MSF_delay_before_admission, group = epi_week_consultation)) +
+  facet_wrap(~site_name, labeller = label_wrap_gen(25)) +
+  geom_boxplot() +
+  scale_x_date(
+    name = "Week of Consultation", date_breaks = "1 week", date_labels = "%V", 
+    sec.axis = ggplot2::sec_axis(trans = ~ .), expand = expansion(mult = c(0.01, 0.01))
+    ) +
+  labs(y = "Onset to admission delay (days)")
+
+ggsave(file.path(path.local.country.week.graphs, paste0('boxplot_delay_admission_week', '_', week_report, '.png')),
+       plot = boxplot_delay_admission_week_site, 
+       width = 6, 
+       height = 6, 
+       scale = 1.1,
+       dpi = 320)
+
+
+boxplot_delay_admission_week_site
 ```
 
 
@@ -1231,7 +1269,7 @@ latest_2_epiweeks <- max_2(dta_msf_linelist$epi_week_consultation)
 
 # length stay
 tbl_length_stay <- dta_msf_linelist %>% 
-  filter(MSF_covid_status %in% c('Confirmed', 'Probable', 'Suspected')) %>% 
+  #filter(MSF_covid_status %in% include_status) %>% # I guess status is not important for this metric?
   filter(patcourse_admit == 'Yes') %>% 
   drop_na(epi_week_consultation, MSF_length_stay) %>% 
   filter(MSF_length_stay <= 50, !epi_week_consultation %in% latest_2_epiweeks) # filter any stays over 50 days
@@ -1262,6 +1300,25 @@ To be completed as appropriate -->
 # by Paul
 
 #[Multifacet Box plot displaying distribution of length of stay, aggregated by week, with trend and filtered by OC /country/ project]
+
+
+boxplot_length_stay_week_site <- ggplot(tbl_length_stay, aes(epi_week_consultation, MSF_length_stay, group = epi_week_consultation)) + 
+  facet_wrap(~site_name, labeller = label_wrap_gen(25)) +
+  geom_boxplot() +  
+  scale_x_date(
+    name = "Week of Admission", date_breaks = "1 week", date_labels = "%V", 
+    sec.axis = ggplot2::sec_axis(trans = ~ .), expand = expansion(mult = c(0.01, 0.01))
+  ) +
+  labs(y = "Length of stay in hospital (days)", caption = "Latest 2 weeks omitted for data completeness purposes")
+
+ggsave(file.path(path.local.country.week.graphs, paste0('boxplot_length_stay_week', '_', week_report, '.png')),
+       plot = boxplot_length_stay_week_site, 
+       width = 6, 
+       height = 6, 
+       scale = 1.1,
+       dpi = 320)
+
+boxplot_length_stay_week_site
 ```
 
 

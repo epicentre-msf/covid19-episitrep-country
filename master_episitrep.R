@@ -47,8 +47,7 @@ styles_info(my_doc)
 
 # Doc title
 source(file.path(path.R, 'docx_section0_heading.R'), encoding = 'UTF-8')
-
-# source(file.path(path.R, 'docx_section1_worldwide_analyses.R'), encoding = 'UTF-8')
+source(file.path(path.R, 'docx_section1_worldwide_analyses.R'), encoding = 'UTF-8')
 # source(file.path(path.R, 'docx_section2_MSF_level_analyses.R'), encoding = 'UTF-8')
 
 

@@ -11,9 +11,7 @@ txt_col_width   <- (txt_page_width - inter_col_width)/2
 
 
 
-# === === === === === === === === === === 
-# COMMON Functions
-# === === === === === === === === === === 
+# Headings and sections ---------------------------------------------------
 
 
 add_heading1 <- function(heading_text){
@@ -59,17 +57,23 @@ add_end_section_3columns <- function(widths = rep(txt_col_width * 2/3, 3)){
 
 
 
-# add_figure_map_world <- function(object_name, figure_title, width = 10 * cm_to_in, height = 6.66 * cm_to_in){
-#   body_add_img(
-#     x = my_doc, 
-#     style = 'Figure body', 
-#     src = file.path(path.local.worldwide.graphs, object_name), 
-#     width = width, 
-#     height = height) %>% 
-#     body_add_par(
-#       style = 'Figure title', 
-#       value = figure_title)
-# }
+# Add figures -------------------------------------------------------------
+
+add_figure_counts_trends_country <- function(object_name, 
+                                             path,
+                                             figure_title, 
+                                             width = 12 * cm_to_in,
+                                             height = 6.66 * cm_to_in){
+  body_add_img(
+    x = my_doc,
+    style = 'Figure body',
+    src = file.path(path, object_name),
+    width = width,
+    height = height) %>%
+    body_add_par(
+      style = 'Figure title',
+      value = figure_title)
+}
 
 
 
@@ -100,33 +104,44 @@ add_end_section_3columns <- function(widths = rep(txt_col_width * 2/3, 3)){
 
 
 
-# add_table <- function(object_name, table_title, folder, width = 5, height = 5 * 1.414){
-#   body_add_par(
-#     x = my_doc, 
-#     style = 'Table title', 
-#     value = table_title) %>% 
-#     body_add_img(
-#       style = 'Table as Figure', 
-#       src = file.path(path.local.week, folder, 'tables', object_name), 
-#       width = width, 
-#       height = height)
-# }
+# Add tables --------------------------------------------------------------
+
+
+add_table <- function(object_name, 
+                      path,
+                      table_title, 
+                      folder, 
+                      width = 5, 
+                      height = 5 * 1.414){
+  body_add_par(
+    x = my_doc,
+    style = 'Table title',
+    value = table_title) %>%
+    body_add_img(
+      style = 'Table as Figure',
+      src = file.path(path, object_name),
+      width = width,
+      height = height)
+}
 
 
 
-# add_par_normal <- function(par_text = 'More text here...'){
-#   body_add_par(
-#     x = my_doc, 
-#     style = 'Normal',
-#     value = par_text)
-# }
+# Paragraphs and lists ----------------------------------------------------
+
+
+add_par_normal <- function(par_text = 'More text here...'){
+  body_add_par(
+    x = my_doc,
+    style = 'Normal',
+    value = par_text)
+}
 
 
 
-# add_bullet_normal <- function(bullet_text = 'Bullet text here...'){
-#   body_add_par(
-#     x = my_doc, 
-#     style = 'Normal bullet',
-#     value = bullet_text)
-# }
+add_bullet_normal <- function(bullet_text = 'Bullet text here...'){
+  body_add_par(
+    x = my_doc,
+    style = 'Normal bullet',
+    value = bullet_text)
+}
 

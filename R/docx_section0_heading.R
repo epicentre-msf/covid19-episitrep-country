@@ -33,8 +33,8 @@ my_doc %<>%
                hyperlink = "https://github.com/epicentre-msf/covid19-episitrep-country") %>%
   slip_in_text(style = 'Description char', 
                str =  ") for epidemiologists in MSF to use (R skills required). The scripts will be updated from week to week as analysis progresses as requested./n") %>% 
-               
-              
+  
+  
   # Line to separate
   body_add_par(style = 'Horizontal line', 
                value = '') %>% 
@@ -44,14 +44,12 @@ my_doc %<>%
 
 # Authors and publication ------------------------------------------
 
-
-
 my_doc %<>%
   
   # Authors
   body_add_par(style = 'Description bold',
                value = "Authors") %>%
-
+  
   body_add_par(style = 'Description bullet',
                value = "") %>%
   
@@ -66,9 +64,9 @@ my_doc %<>%
                hyperlink = 'mailto:paul.CAMPBELLepicentre.msf.org')
 
 
-  
+
 my_doc %<>%
-# Affiliation
+  # Affiliation
   body_add_par(style = 'Description bold',
                value = "Affiliation") %>%
   slip_in_column_break(pos = 'before') %>% 
@@ -77,7 +75,7 @@ my_doc %<>%
 
 
 my_doc %<>%
-# Publication
+  # Publication
   body_add_par(style = 'Description bold',
                value = "Publication date") %>%
   slip_in_column_break(pos = 'before') %>% 
@@ -85,19 +83,18 @@ my_doc %<>%
   body_add_par(style = 'Description',
                value = Sys.Date())
 
-  
+
 
 my_doc <- add_end_section_3columns()
-  # Line
-  
 
+
+# Line
 my_doc %<>% 
   body_add_par(style = 'Horizontal line', 
                value = '') %>% 
-  
   body_end_section_continuous()
 
-  
+
 
 # Data sources and links --------------------------------------------------
 

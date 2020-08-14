@@ -41,16 +41,12 @@ if (run_analyes_country) {
 
 my_doc <- read_docx(file.path(path.templates, 
                               'template_country_episitrep.docx'))
-
 styles_info(my_doc)
-
 
 # Doc title
 source(file.path(path.R, 'docx_section0_heading.R'), encoding = 'UTF-8')
 source(file.path(path.R, 'docx_section1_worldwide_analyses.R'), encoding = 'UTF-8')
-# source(file.path(path.R, 'docx_section2_MSF_level_analyses.R'), encoding = 'UTF-8')
-
-
+source(file.path(path.R, 'docx_section2_MSF_level_analyses.R'), encoding = 'UTF-8')
 
 # Save docx ---------------------------------------------------------------
 print(my_doc, target = file.path(path.local.country.week, glue("draft_EpiSitrep_country_{country}_Covid-19_{week_report}.docx")))

@@ -15,7 +15,7 @@ my_doc %<>%
 my_doc %<>% 
   # First paragraph
   body_add_par(style = 'Description', 
-               value = "/nThis document presents tables, graphs and maps of the MSF Covid-19 linelists analyses for a single country (not much text). Most, but not all, of these analyses are presented and commented in the MSF Intersection Covid-19 EpiSitrep edited by Epicentre (for information on the EpiSitrep, please contact Anaïs Broban (") %>% 
+               value = "This document presents tables, graphs and maps of the MSF Covid-19 linelists analyses for a single country (not much text). Most, but not all, of these analyses are presented and commented in the MSF Intersection Covid-19 EpiSitrep edited by Epicentre (for information on the EpiSitrep, please contact Anaïs Broban (") %>% 
   
   slip_in_text(style = 'Hyperlink', 
                str = 'Anais.BROBAN@epicentre.msf.org', 

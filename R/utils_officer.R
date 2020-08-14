@@ -28,6 +28,12 @@ add_heading2 <- function(heading_text){
                value = heading_text)
 }
 
+add_heading3 <- function(heading_text){
+  body_add_par(x = my_doc,
+               style = 'heading 3',
+               value = heading_text)
+}
+
 
 
 add_end_section_continuous <- function(){
@@ -64,6 +70,24 @@ add_figure_counts_trends_country <- function(object_name,
                                              figure_title, 
                                              width = 12 * cm_to_in,
                                              height = 6.66 * cm_to_in){
+  body_add_img(
+    x = my_doc,
+    style = 'Figure body',
+    src = file.path(path, object_name),
+    width = width,
+    height = height) %>%
+    body_add_par(
+      style = 'Figure title',
+      value = figure_title)
+}
+
+
+
+add_figure <- function(object_name, 
+                       path,
+                       figure_title, 
+                       width = 9 * cm_to_in,
+                       height = 7 * cm_to_in){
   body_add_img(
     x = my_doc,
     style = 'Figure body',

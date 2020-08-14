@@ -10,6 +10,14 @@ rounder <- function(x,y) {
   else { x - (x %% abs(y))}
 }
 
+integer_breaks <- function(n = 5, ...) {
+  fxn <- function(x) {
+    breaks <- floor(pretty(x, n, ...))
+    names(breaks) <- attr(breaks, "labels")
+    breaks
+  }
+  return(fxn)
+}
 
 pyramid_brks <- function(x, n = 5) {
   brks <- pretty(0:max(abs(x)), n = n)
@@ -18,6 +26,24 @@ pyramid_brks <- function(x, n = 5) {
 
 pyramid_limits <- function(x) {
   c(-max(abs(x)), max(abs(x)))
+}
+
+pyramid_labs_pos <- function(x, f = 5) {
+  dplyr::case_when(
+    x > 0 & x < max(abs(x)) / f ~ -0.1,
+    x > 0 & x > max(abs(x)) / f ~ 1.1,
+    x < 0 & abs(x) < max(abs(x)) / f ~ 1.1,
+    x < 0 & abs(x) > max(abs(x)) / f ~ -0.1
+  )
+}
+
+pyramid_labs_colour <- function(x, f = 5, in_col = "white", out_col = "grey30") {
+  dplyr::case_when(
+    x > 0 & x < max(abs(x)) / f ~ out_col,
+    x > 0 & x > max(abs(x)) / f ~ in_col,
+    x < 0 & abs(x) < max(abs(x)) / f ~ out_col,
+    x < 0 & abs(x) > max(abs(x)) / f ~ in_col
+  )
 }
 
 

@@ -441,7 +441,7 @@ hist_epicurve_status <- dta_msf_linelist %>%
   ) +
   labs(caption = glue::glue("Missing data: Consultation Date {missing_consultation}, Status: {missing_status}"))
 
-# ggsave(file.path(path.local.msf.graphs, paste0('hist_epicurve_consult_admit', '_', week_report, '.png')),
+# ggsave(file.path(path.local.msf.graphs, paste0('hist_epicurve_consult_admit', '_', name_country, "_", week_report, '.png')),
 #        plot = hist_epicurve_status, 
 #        width = 6, 
 #        height = 4, 
@@ -470,7 +470,7 @@ hist_epicurve_status <- dta_msf_linelist %>%
   ) +
   labs(caption = glue::glue("Missing data: Consultation Date {missing_consultation}, Status: {missing_status}"))
 
-# ggsave(file.path(path.local.msf.graphs, paste0('hist_epicurve_consult_admit', '_', week_report, '.png')),
+# ggsave(file.path(path.local.msf.graphs, paste0('hist_epicurve_consult_admit', '_', name_country, "_", week_report, '.png')),
 #        plot = hist_epicurve_status, 
 #        width = 6, 
 #        height = 4, 
@@ -549,7 +549,7 @@ hist_epicurve_consult_admit <- dta_msf_linelist %>%
   ) +
   labs(caption = glue::glue("Missing data: Consultation Date {missing_consultation}, Admission: {missing_admission}"))
 
-# ggsave(file.path(path.local.msf.graphs, paste0('hist_epicurve_consult_admit', '_', week_report, '.png')),
+# ggsave(file.path(path.local.msf.graphs, paste0('hist_epicurve_consult_admit', '_', name_country, "_", week_report, '.png')),
 #        plot = hist_epicurve_consult_admit, 
 #        width = 6, 
 #        height = 4, 
@@ -585,7 +585,7 @@ hist_epicurve_consult_admit_site <- dta_msf_linelist %>%
   ) +
   labs(caption = glue::glue("Missing data: Consultation Date {missing_consultation}, Admission: {missing_admission}"))
 
-# ggsave(file.path(path.local.msf.graphs, paste0('hist_epicurve_consult_admit', '_', week_report, '.png')),
+# ggsave(file.path(path.local.msf.graphs, paste0('hist_epicurve_consult_admit', '_', name_country, "_", week_report, '.png')),
 #        plot = hist_epicurve_consult_admit_site, 
 #        width = 6, 
 #        height = 4, 

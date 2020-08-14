@@ -284,7 +284,7 @@ gtbl_summary_country <- tbl_summary_country %>%
     data_row.padding = px(1))
 
 gtsave(gtbl_summary_country, 
-       file.path(path.local.country.week.tables, paste0('gtbl_summary_country', '_', name_country, '.png'))) %>%
+       file.path(path.local.country.week.tables, paste0('gtbl_summary_country', '_', name_country, "_", week_report, '.png'))) %>%
   invisible()
 
 
@@ -434,7 +434,7 @@ gtbl_site_covid_status <- tbl_site_covid_status %>%
     data_row.padding = px(1))
 
 gtsave(gtbl_site_covid_status,
-       file.path(path.local.country.week.tables, paste0('gtbl_site_covid_status', '_', week_report, '.png'))) %>%
+       file.path(path.local.country.week.tables, paste0('gtbl_site_covid_status', '_', country, "_", week_report, '.png'))) %>%
   invisible()
 
 
@@ -596,7 +596,7 @@ gtbl_consultation_admission <- tbl_consultation_admission %>%
   
 
 gtsave(gtbl_consultation_admission,
-       file.path(path.local.country.week.tables, paste0('gtbl_consultation_admission', '_', week_report, '.png'))) %>%
+       file.path(path.local.country.week.tables, paste0('gtbl_consultation_admission', '_', country, "_", week_report, '.png'))) %>%
   invisible()
 
 
@@ -637,7 +637,7 @@ hist_epicurve_consult_admit <- df_consult_admit %>%
   ) +
   labs(caption = glue::glue("Missing data: Consultation Date {missing_consultation}, Admission: {missing_admission}"))
 
-ggsave(file.path(path.local.country.week.graphs, paste0('hist_epicurve_consult_admit', '_', week_report, '.png')),
+ggsave(file.path(path.local.country.week.graphs, paste0('hist_epicurve_consult_admit', '_', country, "_", week_report, '.png')),
        plot = hist_epicurve_consult_admit, 
        width = 6, 
        height = 4, 
@@ -675,7 +675,7 @@ hist_epicurve_consult_admit_site <- df_consult_admit %>%
   ) +
   labs(caption = glue::glue("Missing data: Consultation Date {missing_consultation}, Admission: {missing_admission}"))
 
-ggsave(file.path(path.local.country.week.graphs, paste0('hist_epicurve_consult_admit', '_', week_report, '.png')),
+ggsave(file.path(path.local.country.week.graphs, paste0('hist_epicurve_consult_admit', '_', country, "_", week_report, '.png')),
        plot = hist_epicurve_consult_admit_site, 
        width = 6, 
        height = facet_dims$height, 
@@ -795,7 +795,7 @@ gtbl_general_characteristics <- tbl_general_characteristics %>%
     row_group.padding = px(2))
 
 gtsave(gtbl_general_characteristics,
-       file.path(path.local.country.week.tables, paste0('gtbl_general_characteristics','_', week_report, '.png'))) %>%
+       file.path(path.local.country.week.tables, paste0('gtbl_general_characteristics','_', country, "_", week_report, '.png'))) %>%
   invisible()
 
 
@@ -848,7 +848,7 @@ gtbl_general_characteristics_by_site <- tbl_general_characteristics_by_site %>%
 
 
 gtsave(gtbl_general_characteristics_by_site,
-       file.path(path.local.country.week.tables, paste0('gtbl_general_characteristics_by_site','_', week_report, '.png'))) %>%
+       file.path(path.local.country.week.tables, paste0('gtbl_general_characteristics_by_site','_', country, "_", week_report, '.png'))) %>%
   invisible()
 
 
@@ -912,7 +912,7 @@ plot_symptoms <- ggplot(df_symptoms, aes(fct_reorder(symptom, prop), prop)) +
   coord_flip() +
   labs(y = "Proportion", x = NULL)
 
-ggsave(file.path(path.local.country.week.graphs, paste0('plot_symptoms', '_', week_report, '.png')),
+ggsave(file.path(path.local.country.week.graphs, paste0('plot_symptoms', '_', country, "_", week_report, '.png')),
        plot = plot_symptoms,
        width = 6, 
        height = 4, 
@@ -1009,7 +1009,7 @@ gtbl_cfr_status_site <- tbl_cfr_status_site %>%
     row_group.padding = px(2))
 
 gtsave(gtbl_cfr_status_site,
-       file.path(path.local.country.week.tables, paste0('gtbl_cfr_status_site','_', week_report, '.png'))) %>%
+       file.path(path.local.country.week.tables, paste0('gtbl_cfr_status_site','_', country, "_", week_report, '.png'))) %>%
   invisible()
 
 
@@ -1052,7 +1052,7 @@ pyramid_age_sex_confirmed <- ggplot(tbl_pyramid_confirmed, aes(x = age_group, y 
   labs(x = "Age Group", y = "Patients", caption = asp_caption)  +
   guides(y.sec = guide_axis_label_trans(~paste(.x))) # show age group labels on both axis
 
-ggsave(file.path(path.local.country.week.graphs, paste0('pyramid_age_sex_confirmed', '_', week_report, '.png')),
+ggsave(file.path(path.local.country.week.graphs, paste0('pyramid_age_sex_confirmed', '_', country, "_", week_report, '.png')),
        plot = pyramid_age_sex_confirmed,
        width = 8,
        height = 6)
@@ -1088,7 +1088,7 @@ pyramid_age_sex_confirmed_site <- ggplot(tbl_pyramid_confirmed_site, aes(x = age
   theme(legend.position = "top") +
   labs(x = "Age Group", y = "Patients", caption = paste0("Note free x scales | ", asp_caption))
 
-ggsave(file.path(path.local.country.week.graphs, paste0('pyramid_age_sex_confirmed_site', '_', week_report, '.png')),
+ggsave(file.path(path.local.country.week.graphs, paste0('pyramid_age_sex_confirmed_site', '_', country, "_", week_report, '.png')),
        plot = pyramid_age_sex_confirmed_site,
        width = 6,
        height = facet_dims$height)
@@ -1215,7 +1215,7 @@ dots_cfr_agegroup <- ggplot(df_severity, aes(x = age_group)) +
                      labels = scales::percent_format(accuracy = 1), sec.axis = dup_axis(name = NULL)) +  
   labs(x = "Age Group", y = "CFR", caption = "CFR = deaths / known outcomes (cured + died)\nLine range shows binomial 95% confidence intervals") 
 
-ggsave(file.path(path.local.country.week.graphs, paste0('dots_cfr_agegroup', '_', week_report, '.png')),
+ggsave(file.path(path.local.country.week.graphs, paste0('dots_cfr_agegroup', '_', country, "_", week_report, '.png')),
        plot = dots_cfr_agegroup,
        width = 6, 
        height = 4, 
@@ -1254,7 +1254,7 @@ boxplot_delay_admission_week <- ggplot(dta_delay, aes(epi_week_consultation, MSF
     ) +
   labs(y = "Onset to admission delay (days)")
 
-ggsave(file.path(path.local.country.week.graphs, paste0('boxplot_delay_admission_week', '_', week_report, '.png')),
+ggsave(file.path(path.local.country.week.graphs, paste0('boxplot_delay_admission_week', '_', country, "_", week_report, '.png')),
        plot = boxplot_delay_admission_week, 
        width = 6, 
        height = 4, 
@@ -1284,7 +1284,7 @@ boxplot_delay_admission_week_site <- ggplot(dta_delay, aes(epi_week_consultation
     ) +
   labs(y = "Onset to admission delay (days)")
 
-ggsave(file.path(path.local.country.week.graphs, paste0('boxplot_delay_admission_week', '_', week_report, '.png')),
+ggsave(file.path(path.local.country.week.graphs, paste0('boxplot_delay_admission_week', '_', country, "_", week_report, '.png')),
        plot = boxplot_delay_admission_week_site, 
        width = 6, 
        height = facet_dims$height, 
@@ -1326,7 +1326,7 @@ boxplot_length_stay_week <- ggplot(tbl_length_stay, aes(epi_week_consultation, M
   ) +
   labs(y = "Length of stay in hospital (days)", caption = "Latest 2 weeks omitted for data completeness purposes")
 
-ggsave(file.path(path.local.country.week.graphs, paste0('boxplot_length_stay_week', '_', week_report, '.png')),
+ggsave(file.path(path.local.country.week.graphs, paste0('boxplot_length_stay_week', '_', country, "_", week_report, '.png')),
        plot = boxplot_length_stay_week, 
        width = 6, 
        height = 4, 
@@ -1355,7 +1355,7 @@ boxplot_length_stay_week_site <- ggplot(tbl_length_stay, aes(epi_week_consultati
   ) +
   labs(y = "Length of stay in hospital (days)", caption = "Latest 2 weeks omitted for data completeness purposes")
 
-ggsave(file.path(path.local.country.week.graphs, paste0('boxplot_length_stay_week', '_', week_report, '.png')),
+ggsave(file.path(path.local.country.week.graphs, paste0('boxplot_length_stay_week', '_', country, "_", week_report, '.png')),
        plot = boxplot_length_stay_week_site, 
        width = 6, 
        height = facet_dims$height, 

@@ -73,6 +73,7 @@ plot_epicurve <- function(df,
                           sec_date_axis = TRUE,
                           facet_nrow = NULL,
                           facet_ncol = NULL,
+                          facet_scales = "fixed",
                           facet_lab_pos = "top",
                           group_na_colour = "grey",
                           title = waiver(),
@@ -131,7 +132,7 @@ plot_epicurve <- function(df,
     caption <- waiver()
   }
   
-  p <- ggplot(df_epicurve, aes({{date_col}}, n))
+  p <- ggplot(df_epicurve, aes({{date_col}}, n)) 
   
   if(missing(group_col)) {
     p <- p + geom_col(fill = "steelblue")
@@ -162,14 +163,25 @@ plot_epicurve <- function(df,
   
   if(!missing(facet_col)) {
     facet_lab_pos <- match.arg(facet_lab_pos, c("top", "bottom", "left", "right"))
-    p <- p + facet_wrap(vars({{facet_col}}), nrow = facet_nrow, ncol = facet_ncol, strip.position = facet_lab_pos, labeller = label_wrap_gen(width = 25))
+    p <- p + facet_wrap(
+      vars({{facet_col}}), 
+      nrow = facet_nrow, 
+      ncol = facet_ncol, 
+      scales = facet_scales, 
+      strip.position = facet_lab_pos, 
+      labeller = label_wrap_gen(width = 25)
+    )
   }
   
   if(!missing(prop_col)) {
     p <- p +
       geom_line(data = df_prop, aes(y = prop / scaling_factor, colour = prop_line_colour), key_glyph = "timeseries", size = prop_line_size) +
       scale_colour_identity(name = NULL, breaks = prop_line_colour, labels = paste(prop_lab, "%"), guide = "legend") +
-      scale_y_continuous(sec.axis = ggplot2::sec_axis(~ . * scaling_factor, name = prop_lab, labels = scales::percent_format(accuracy = 1)))
+      scale_y_continuous(breaks = integer_breaks(), labels = scales::number_format(accuracy = 1), expand = expansion(mult = c(0, 0.05)),
+                         sec.axis = ggplot2::sec_axis(~ . * scaling_factor, name = prop_lab, labels = scales::percent_format(accuracy = 1)))
+  } else {
+    p <- p +
+      scale_y_continuous(breaks = integer_breaks(), labels = scales::number_format(accuracy = 1), expand = expansion(mult = c(0, 0.05)))
   }
   
   p <- p +

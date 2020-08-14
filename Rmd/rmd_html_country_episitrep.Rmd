@@ -82,6 +82,15 @@ path_agg_data <- file.path(path.sharepoint, "coordination", "Surveillance focal 
 dta_msf_aggregated <- get_msf_country_aggregated(path_agg_data, iso_country = iso_country)
 
 dta_msf_combined <- get_msf_combined_data(dta_msf_linelist, dta_msf_aggregated)
+
+get_facet_dims <- function(df, facet_col = "site_name") {
+  n <- dplyr::n_distinct(df[[facet_col]])
+  ncol <- ifelse(n == 1, 1, 2)
+  nrow <- ceiling(n / 2)
+  height <- nrow * 3
+  return(list(ncol = ncol, nrow = nrow, height = height))
+}
+
 ```
 
 
@@ -439,13 +448,18 @@ gtbl_site_covid_status
 <!-- Figure 2 - Weekly evolution of patient intake by covid status in country projects -->
 ```{r}
 # By Paul
-missing_consultation <- sum(is.na(dta_msf_linelist$epi_week_consultation))
-missing_status    <- sum(dta_msf_linelist$MSF_covid_status == "Unknown")
+df_status_long <- dta_msf_combined %>% 
+  select(-Total) %>% 
+  pivot_longer(cols = Confirmed:Unknown, names_to = "MSF_covid_status") %>% 
+  uncount(value)
+
+missing_consultation <- sum(is.na(df_status_long$date))
+missing_status    <- sum(df_status_long$MSF_covid_status == "Unknown")
 
 # Histograms of number of patients consulted/admitted weekly in MSF facilities, filtered on OC/country/project, displayed by date of consultation and broken down by covid status
-hist_epicurve_status <- dta_msf_linelist %>% 
+hist_epicurve_status <- df_status_long %>% 
   plot_epicurve(
-    date_col = epi_week_consultation, 
+    date_col = date, 
     group_col = MSF_covid_status,
     floor_date_week = FALSE, 
     sec_date_axis = TRUE,
@@ -453,9 +467,9 @@ hist_epicurve_status <- dta_msf_linelist %>%
     y_lab = "Patients",
     group_lab = "Status"
   ) +
-  labs(caption = glue::glue("Missing data: Consultation Date {missing_consultation}, Status: {missing_status}"))
+  labs(caption = glue::glue("Missing data: Consultation Date {missing_consultation}"))
 
-ggsave(file.path(path.local.country.week.graphs, paste0('hist_epicurve_consult_admit', '_', week_report, '.png')),
+ggsave(file.path(path.local.country.week.graphs, paste0('hist_epicurve_status', '_', week_report, '.png')),
        plot = hist_epicurve_status, 
        width = 6, 
        height = 4, 
@@ -466,32 +480,37 @@ hist_epicurve_status
 ```
 
 <!-- Figure 3 - Weekly evolution of patient intake by covid status in each of the country projects -->
-```{r fig.height=6}
+```{r}
 # By Paul 
 
 # Multifacet Histograms of number of patients consulted/admitted weekly for each MSF facility, filtered on OC/country/project, displayed by date of consultation and broken down by covid status]
 
-hist_epicurve_status <- dta_msf_linelist %>% 
+facet_dims <- get_facet_dims(dta_msf_combined)
+
+hist_epicurve_status_site <- df_status_long %>% 
   plot_epicurve(
-    date_col = epi_week_consultation, 
+    date_col = date, 
     group_col = MSF_covid_status,
     facet_col = site_name,
+    facet_nrow = facet_dims$nrow,
+    facet_ncol = facet_dims$ncol,
+    facet_scales = "free_y",
     floor_date_week = FALSE, 
     sec_date_axis = TRUE,
     date_lab = "Week of Consultation", 
     y_lab = "Patients",
     group_lab = "Status"
   ) +
-  labs(caption = glue::glue("Missing data: Consultation Date {missing_consultation}, Status: {missing_status}"))
+  labs(caption = glue::glue("Note free y scales | Missing data: Consultation Date {missing_consultation}"))
 
-ggsave(file.path(path.local.country.week.graphs, paste0('hist_epicurve_consult_admit', '_', week_report, '.png')),
-       plot = hist_epicurve_status, 
+ggsave(file.path(path.local.country.week.graphs, paste0('hist_epicurve_status_site', '_', week_report, '.png')),
+       plot = hist_epicurve_status_site, 
        width = 6, 
-       height = 6, 
+       height = facet_dims$height, 
        scale = 1.1,
        dpi = 320)
 
-hist_epicurve_status
+hist_epicurve_status_site
 
 ```
 
@@ -597,10 +616,12 @@ gtbl_consultation_admission
 missing_consultation <- sum(is.na(dta_msf_linelist$epi_week_consultation))
 missing_admission    <- sum(dta_msf_linelist$patcourse_admit == "Unknown")
 
-# Histograms of number of patients consulted/admitted weekly in MSF facilities, filtered on OC/country/project, displayed by date of consultation and broken down by covid status
-hist_epicurve_consult_admit <- dta_msf_linelist %>% 
+df_consult_admit <- dta_msf_linelist %>% 
   filter(patcourse_admit != "Unknown") %>% 
-  mutate(patcourse_admit = recode(patcourse_admit, "Yes" = "Admitted", "No" = "Not Admitted")) %>% 
+  mutate(patcourse_admit = recode(patcourse_admit, "Yes" = "Admitted", "No" = "Not Admitted"))
+
+# Histograms of number of patients consulted/admitted weekly in MSF facilities, filtered on OC/country/project, displayed by date of consultation and broken down by covid status
+hist_epicurve_consult_admit <- df_consult_admit %>% 
   plot_epicurve(
     date_col = epi_week_consultation, 
     group_col = patcourse_admit,
@@ -633,9 +654,9 @@ hist_epicurve_consult_admit
 
 #Multifacet Histogram of number of consultation/admissions aggregated by week for each MSF project, broken down by admission status (consultation or admission), + curve displaying proportion of admitted
 
-hist_epicurve_consult_admit_site <- dta_msf_linelist %>% 
-  filter(patcourse_admit != "Unknown") %>% 
-  mutate(patcourse_admit = recode(patcourse_admit, "Yes" = "Admitted", "No" = "Not Admitted")) %>% 
+facet_dims <- get_facet_dims(df_consult_admit)
+
+hist_epicurve_consult_admit_site <- df_consult_admit %>% 
   plot_epicurve(
     date_col = epi_week_consultation, 
     group_col = patcourse_admit,
@@ -643,6 +664,8 @@ hist_epicurve_consult_admit_site <- dta_msf_linelist %>%
     prop_numer = "Admitted",
     prop_denom = c("Admitted", "Not Admitted"),
     facet_col = site_name,
+    facet_nrow = facet_dims$nrow,
+    facet_ncol = facet_dims$ncol,
     floor_date_week = FALSE, 
     sec_date_axis = TRUE,
     date_lab = "Week of Consultation", 
@@ -655,7 +678,7 @@ hist_epicurve_consult_admit_site <- dta_msf_linelist %>%
 ggsave(file.path(path.local.country.week.graphs, paste0('hist_epicurve_consult_admit', '_', week_report, '.png')),
        plot = hist_epicurve_consult_admit_site, 
        width = 6, 
-       height = 6, 
+       height = facet_dims$height, 
        scale = 1.1,
        dpi = 320)
 
@@ -862,21 +885,29 @@ sympt_lvl <-  c(
 
 df_symptoms <- dta_msf_linelist %>% 
   select(starts_with("MSF_Symptom"), patcourse_asymp) %>% 
-      select(-ends_with("_date_onset")) %>% 
-      tidyr::pivot_longer(everything(), names_to = "symptom", values_to = "yes_no") %>% 
-      mutate(symptom = recode(symptom, MSF_symptom_chills = "MSF_symptom_fever_chills", MSF_symptom_fever = "MSF_symptom_fever_chills")) %>% 
-      group_by(symptom) %>% 
-      summarise(total = sum(!is.na(yes_no)),
-                yes = sum(yes_no == "Yes", na.rm = T),
-                prop = (yes / total)) %>% 
-      filter(yes > 0) %>% 
-      mutate(symptom = factor(symptom, levels = sympt_lvl, labels = names(sympt_lvl))) %>% 
-      arrange(-prop)
+  select(-ends_with("_date_onset")) %>% 
+  tidyr::pivot_longer(everything(), names_to = "symptom", values_to = "yes_no") %>% 
+  mutate(symptom = recode(symptom, MSF_symptom_chills = "MSF_symptom_fever_chills", MSF_symptom_fever = "MSF_symptom_fever_chills")) %>% 
+  group_by(symptom) %>% 
+  summarise(total = sum(!is.na(yes_no)),
+            yes = sum(yes_no == "Yes", na.rm = T),
+            prop = (yes / total)) %>% 
+  ungroup() %>% 
+  filter(yes > 0) %>% 
+  mutate(symptom = factor(symptom, levels = sympt_lvl, labels = names(sympt_lvl))) %>% 
+  arrange(-prop)
 
 
 plot_symptoms <- ggplot(df_symptoms, aes(fct_reorder(symptom, prop), prop)) +
   geom_col(fill = "steelblue") +
-  geom_text(aes(label = glue::glue("{yes}/{total}"), y = prop ), colour = "black", size = 4, hjust = -.02) + #+ .05
+  geom_text(aes(
+    label = glue::glue("{yes} / {total}"), 
+    y = prop, 
+    colour = ifelse(prop < max(prop) / 4, "grey30", "white"),
+    hjust = ifelse(prop < max(prop) / 4, -0.1, 1.1)
+  ), 
+  size = 3, fontface = "bold") + #hjust = -.02,
+  scale_colour_identity() +
   scale_y_continuous(labels = scales::percent_format(accuracy = 1), expand = expansion(mult = c(0, 0.1))) +
   coord_flip() +
   labs(y = "Proportion", x = NULL)
@@ -1012,8 +1043,9 @@ tbl_pyramid_confirmed <- dta_msf_linelist %>%
 pyramid_age_sex_confirmed <- ggplot(tbl_pyramid_confirmed, aes(x = age_group, y = n, fill = patinfo_sex)) +
   geom_col() +
   geom_hline(yintercept = 0, colour = "black") +
-  geom_text(aes(label = abs(n), hjust = if_else(n >= 0, 1.1, -0.1)), colour = "white", size = 4) +
+  geom_text(aes(label = abs(n), hjust = pyramid_labs_pos(n), colour = pyramid_labs_colour(n)), size = 4) + 
   coord_flip() +
+  scale_colour_identity() +
   scale_fill_manual(name = NULL, values = c("#4E79A7FF", "#A0CBE8FF"), breaks = c("M", "F"), labels = c("Males", "Females")) +
   scale_y_continuous(limits = pyramid_limits, breaks = pyramid_brks, label = abs) + 
   theme(legend.position = "top") +
@@ -1038,25 +1070,28 @@ pyramid_age_sex_confirmed
 
 tbl_pyramid_confirmed_site <- dta_msf_linelist %>% 
   drop_na(patinfo_sex, age_group) %>% 
-  filter(MSF_covid_status %in% include_status) %>% 
+  filter(MSF_covid_status %in% include_status, patinfo_sex != "Unknown", age_group != "Unknown") %>% 
   count(site_name, patinfo_sex, age_group) %>% 
   mutate(n = if_else(patinfo_sex == "M", -n, n))
 
+facet_dims <- get_facet_dims(tbl_pyramid_confirmed_site)
+
 pyramid_age_sex_confirmed_site <- ggplot(tbl_pyramid_confirmed_site, aes(x = age_group, y = n, fill = patinfo_sex)) +
-  facet_wrap(~site_name, ncol = 2, scales = "free_x", labeller = label_wrap_gen()) +
+  facet_wrap(~site_name, ncol = facet_dims$ncol, nrow = facet_dims$nrow, scales = "free_x", labeller = label_wrap_gen()) +
   geom_col() +
   geom_hline(yintercept = 0, colour = "black") +
-  geom_text(aes(label = abs(n), hjust = if_else(n >= 0, 1.1, -0.1)), colour = "white", size = 4) +
+  #geom_text(aes(label = abs(n), hjust = pyramid_labs_pos(n), colour = pyramid_labs_colour(n)), size = 4) +
+  #scale_colour_identity() +
   coord_flip() +
   scale_fill_manual(name = NULL, values = c("#4E79A7FF", "#A0CBE8FF"), breaks = c("M", "F"), labels = c("Males", "Females")) +
   scale_y_continuous(label = abs, limits = pyramid_limits) + 
   theme(legend.position = "top") +
-  labs(x = "Age Group", y = "Patients", caption = asp_caption) 
+  labs(x = "Age Group", y = "Patients", caption = paste0("Note free x scales | ", asp_caption))
 
 ggsave(file.path(path.local.country.week.graphs, paste0('pyramid_age_sex_confirmed_site', '_', week_report, '.png')),
        plot = pyramid_age_sex_confirmed_site,
-       width = 8,
-       height = 8)
+       width = 6,
+       height = facet_dims$height)
 
 
 pyramid_age_sex_confirmed_site
@@ -1154,25 +1189,30 @@ df_severity <- dta_msf_linelist %>%
     n_hosp = sum(patcourse_admit == "Yes", na.rm = TRUE),
     n_hosp_known = sum(patcourse_admit %in% c("Yes", "No"), na.rm = TRUE),
     p_hosp = n_hosp / n_hosp_known,
-    p_hosp_low95 = as.numeric(binom.test(n_hosp, n_hosp_known)$conf.int)[1],
-    p_hosp_upp95 = as.numeric(binom.test(n_hosp, n_hosp_known)$conf.int)[2],
+    hosp_lab = paste0("(", n_hosp, "/", n_hosp_known, ")"),
     n_died = sum(outcome_patcourse_status == "Died", na.rm = TRUE),
     n_died_known = sum(outcome_patcourse_status %in% c("Died", "Cured"), na.rm = TRUE),
-    p_died_low95 = as.numeric(binom.test(n_died, n_died_known)$conf.int)[1],
-    p_died_upp95 = as.numeric(binom.test(n_died, n_died_known)$conf.int)[2],
     p_died = n_died / n_died_known,
-    # hosp_lab = paste0("(", n_hosp_known, ")"),
-    # died_lab = paste0("(", n_died_known, ")"),
-    hosp_lab = paste0("(", n_hosp, "/", n_hosp_known, ")"),
+    hosp_lab = paste0("(", n_hosp_known, ")"),
+    died_lab = paste0("(", n_died_known, ")"),
     died_lab = paste0("(", n_died, "/", n_died_known, ")")
+  ) %>% 
+  filter(n_died_known > 0) %>% 
+  group_by(age_group) %>% 
+  mutate(
+    p_hosp_low95 = as.numeric(binom.test(n_hosp, n_hosp_known)$conf.int)[1],
+    p_hosp_upp95 = as.numeric(binom.test(n_hosp, n_hosp_known)$conf.int)[2],
+    p_died_low95 = as.numeric(binom.test(n_died, n_died_known)$conf.int)[1],
+    p_died_upp95 = as.numeric(binom.test(n_died, n_died_known)$conf.int)[2]
   ) %>% 
   ungroup()
 
 dots_cfr_agegroup <- ggplot(df_severity, aes(x = age_group)) +
   geom_point(aes(y = p_died), size = 2) +
   geom_linerange(aes(ymin = p_died_low95, ymax = p_died_upp95)) +
-  geom_text(aes(label = died_lab, y = p_died_upp95 + 0.02), size = 4.2) +
-  scale_y_continuous(breaks = seq(0, 1, 0.2), limits = c(0, 1), labels = scales::percent_format(accuracy = 1), sec.axis = dup_axis(name = NULL)) +  
+  geom_text(aes(label = died_lab, y = p_died_upp95), size = 4.2, vjust = -1) +
+  scale_y_continuous(breaks = seq(0, 1, 0.2), limits = c(0, 1), #expand = expansion(mult = c(0.05, 0.1)),
+                     labels = scales::percent_format(accuracy = 1), sec.axis = dup_axis(name = NULL)) +  
   labs(x = "Age Group", y = "CFR", caption = "CFR = deaths / known outcomes (cured + died)\nLine range shows binomial 95% confidence intervals") 
 
 ggsave(file.path(path.local.country.week.graphs, paste0('dots_cfr_agegroup', '_', week_report, '.png')),
@@ -1232,8 +1272,11 @@ boxplot_delay_admission_week
 # by Paul
 
 # [Multifacet Box plot displaying distribution of delay from symptoms onset to consultation/admission, aggregated by week, with trend and filtered by OC /country/ project]
+
+facet_dims <- get_facet_dims(dta_delay)
+
 boxplot_delay_admission_week_site <- ggplot(dta_delay, aes(epi_week_consultation, MSF_delay_before_admission, group = epi_week_consultation)) +
-  facet_wrap(~site_name, labeller = label_wrap_gen(25)) +
+  facet_wrap(~site_name, labeller = label_wrap_gen(25), ncol = facet_dims$ncol, nrow = facet_dims$nrow) +
   geom_boxplot() +
   scale_x_date(
     name = "Week of Consultation", date_breaks = "1 week", date_labels = "%V", 
@@ -1244,7 +1287,7 @@ boxplot_delay_admission_week_site <- ggplot(dta_delay, aes(epi_week_consultation
 ggsave(file.path(path.local.country.week.graphs, paste0('boxplot_delay_admission_week', '_', week_report, '.png')),
        plot = boxplot_delay_admission_week_site, 
        width = 6, 
-       height = 6, 
+       height = facet_dims$height, 
        scale = 1.1,
        dpi = 320)
 
@@ -1301,9 +1344,10 @@ To be completed as appropriate -->
 
 #[Multifacet Box plot displaying distribution of length of stay, aggregated by week, with trend and filtered by OC /country/ project]
 
+facet_dims <- get_facet_dims(tbl_length_stay)
 
 boxplot_length_stay_week_site <- ggplot(tbl_length_stay, aes(epi_week_consultation, MSF_length_stay, group = epi_week_consultation)) + 
-  facet_wrap(~site_name, labeller = label_wrap_gen(25)) +
+  facet_wrap(~site_name, labeller = label_wrap_gen(25), ncol = facet_dims$ncol, nrow = facet_dims$nrow) +
   geom_boxplot() +  
   scale_x_date(
     name = "Week of Admission", date_breaks = "1 week", date_labels = "%V", 
@@ -1314,7 +1358,7 @@ boxplot_length_stay_week_site <- ggplot(tbl_length_stay, aes(epi_week_consultati
 ggsave(file.path(path.local.country.week.graphs, paste0('boxplot_length_stay_week', '_', week_report, '.png')),
        plot = boxplot_length_stay_week_site, 
        width = 6, 
-       height = 6, 
+       height = facet_dims$height, 
        scale = 1.1,
        dpi = 320)
 

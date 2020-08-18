@@ -8,7 +8,6 @@ source(file.path(path.R, "utils_management.R"), encoding = "UTF-8")
 source(file.path(path.R, "utils_vis.R")       , encoding = "UTF-8")
 source(file.path(path.R, "utils_epicurve.R")  , encoding = "UTF-8")
 source(file.path(path.R, "utils_modelling.R") , encoding = "UTF-8")
-source(file.path(path.R, 'utils_officer.R'), encoding = 'UTF-8')
 
 
 # Parameters --------------------------------------------------------------
@@ -16,6 +15,7 @@ source(file.path(path.R, 'utils_officer.R'), encoding = 'UTF-8')
 # automatize this later
 country <- "AFG"
 
+source(file.path(path.R, "set_time_frame.R")  , encoding = "UTF-8")
 
 
 
@@ -37,6 +37,7 @@ if (run_analyes_country) {
 
 
 # Build EpiSitrep docx ----------------------------------------------------
+source(file.path(path.R, 'utils_officer.R')   , encoding = 'UTF-8')
 
 
 my_doc <- read_docx(file.path(path.templates, 

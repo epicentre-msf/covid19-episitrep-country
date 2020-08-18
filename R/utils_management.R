@@ -1,4 +1,34 @@
 
+get_prev_sunday <- function(date) {
+  lubridate::floor_date(as.Date(date), unit = "week", week_start = 7)
+}
+
+get_max_date_report <- function(date = get_prev_sunday(Sys.Date())) {
+  return(as.Date(date))
+}
+
+# Set the term of dates this is also used to separate output files
+set_date_max <- function(date_max, get_updated_data = FALSE){
+  
+  get_updated_data <- get_updated_data
+  
+  date_max <- as.Date(date_max)
+
+  # Create folders speficit to date_max
+  path.local.day    <- file.path(path.local, date_max)
+  path.local.data   <- file.path(path.local.day, 'data')
+  path.local.graphs <- file.path(path.local.day, 'graphs')
+  path.local.tables <- file.path(path.local.day, 'tables')
+
+  dir.create(path.local.day    , showWarnings = FALSE, recursive = TRUE) 
+  dir.create(path.local.data   , showWarnings = FALSE, recursive = TRUE) 
+  dir.create(path.local.graphs , showWarnings = FALSE, recursive = TRUE) 
+  dir.create(path.local.tables , showWarnings = FALSE, recursive = TRUE) 
+  
+  return((date_max))
+
+}
+
 
 get_prev_sunday <- function(date) {
   lubridate::floor_date(as.Date(date), unit = "week", week_start = 7)
@@ -22,6 +52,13 @@ max_2 <- function(x) {
   c(nth(x, n-1), nth(x, n))
 }
 
+
+# Formatting Confidence Intervals
+combine_ci <- function(lwr, upr, digits = 1) {
+  sprintf(glue("[%.{digits}f - %.{digits}f]"), 
+        round(lwr, digits = digits),
+        round(upr, digits = digits))
+}
 
 
 format_ci <- function(tbl) {
@@ -175,7 +212,10 @@ prepare_msf_dta <- function(dta){
       epi_week_report = make_epiweek_date(report_date),
       epi_week_consultation = make_epiweek_date(date_consultation),
       epi_week_admission = make_epiweek_date(presHCF),
-      epi_week_onset = make_epiweek_date(dateonset)
+      epi_week_onset = make_epiweek_date(dateonset),
+      Comcond_present_01 = case_when(
+        Comcond_present == 0 ~ 0,
+        Comcond_present >=1 ~ 1)
     )
   
   # Create age-groups
@@ -204,6 +244,12 @@ prepare_msf_dta <- function(dta){
       merge_vent   = recode_care(vent, outcome_vent), 
       merge_ecmo   = recode_care(ecmo, outcome_ecmo)) 
   
+  # Add geographical variables
+  dta <- dta %>% 
+    left_join(df_countries %>% select(continent, region, iso_a3, country), by = 'country') %>% 
+    mutate(
+      continent = as.factor(continent)
+    )
   
   # Filter date of consultation until the Sunday the EpiSitrep (see set_time_frame.R)
   # but keep NAs as there is a considerable number of rows with missing date of consultation data

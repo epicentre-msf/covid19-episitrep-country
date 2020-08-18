@@ -34,6 +34,7 @@ if (run_analyes_country) {
 
 
 # Build EpiSitrep docx ----------------------------------------------------
+source(file.path(path.R, 'utils_officer.R')   , encoding = 'UTF-8')
 
 
 my_doc <- read_docx(file.path(path.templates, 'template_country_episitrep.docx'))

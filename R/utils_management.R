@@ -245,11 +245,11 @@ prepare_msf_dta <- function(dta){
       merge_ecmo   = recode_care(ecmo, outcome_ecmo)) 
   
   # Add geographical variables
-  dta <- dta %>% 
-    left_join(df_countries %>% select(continent, region, iso_a3, country), by = 'country') %>% 
-    mutate(
-      continent = as.factor(continent)
-    )
+#  dta <- dta %>% 
+#    left_join(df_countries %>% select(continent, region, iso_a3, country), by = 'country') %>% 
+#    mutate(
+#      continent = as.factor(continent)
+#    )
   
   # Filter date of consultation until the Sunday the EpiSitrep (see set_time_frame.R)
   # but keep NAs as there is a considerable number of rows with missing date of consultation data

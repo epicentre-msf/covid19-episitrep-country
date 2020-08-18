@@ -72,11 +72,13 @@ sf_world <- get_world_sf(scale = 'small', proj = 'robinson', update_data = TRUE)
 
 
 # Get ECDC data
-dta_ecdc <- get_ecdc_data() %>% prepare_ecdc_dta() %>% filter(iso_a3 == iso_country)
+dta_ecdc <- get_ecdc_data() %>% 
+  prepare_ecdc_dta() %>% 
+  filter(iso_a3 == iso_country)
 
 # Get MSF data
 path_latest_linelist <- max(list.files(file.path(path.sharepoint, "data/linelist/world"), pattern = "[.]rds$", full.names = TRUE))
-dta_msf_linelist   <- get_msf_country_linelist(path = path_latest_linelist, iso_country = iso_country)
+dta_msf_linelist <- get_msf_country_linelist(path = path_latest_linelist, iso_country = iso_country)
 
 path_agg_data <- file.path(path.sharepoint, "coordination", "Surveillance focal points coordination", "Aggregated reporting", "Report_covid_aggregate_all_v2.xlsx")
 dta_msf_aggregated <- get_msf_country_aggregated(path_agg_data, iso_country = iso_country)

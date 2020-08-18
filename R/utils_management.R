@@ -1,5 +1,13 @@
 
 
+get_prev_sunday <- function(date) {
+  lubridate::floor_date(as.Date(date), unit = "week", week_start = 7)
+}
+
+get_max_date_report <- function(date = get_prev_sunday(Sys.Date())) {
+  return(as.Date(date))
+}
+
 # set date to the Monday of the ISO week
 make_epiweek_date <- function(date) {
   lubridate::wday(date, week_start = 1) <- 1

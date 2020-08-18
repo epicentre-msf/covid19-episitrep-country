@@ -1,3 +1,9 @@
+# Parameters --------------------------------------------------------------
+
+# automatize this later
+country <- "AFG"
+name_country <- "Afghanistan"
+
 
 # Set environment ---------------------------------------------------------
 
@@ -8,16 +14,7 @@ source(file.path(path.R, "utils_management.R"), encoding = "UTF-8")
 source(file.path(path.R, "utils_vis.R")       , encoding = "UTF-8")
 source(file.path(path.R, "utils_epicurve.R")  , encoding = "UTF-8")
 source(file.path(path.R, "utils_modelling.R") , encoding = "UTF-8")
-source(file.path(path.R, 'utils_officer.R'), encoding = 'UTF-8')
-
-
-# Parameters --------------------------------------------------------------
-
-# automatize this later
-country <- "AFG"
-
-
-
+source(file.path(path.R, "set_time_frame.R") , encoding = "UTF-8")
 
 # Knit Markdown ----------------------------------------------------------------
 
@@ -39,9 +36,11 @@ if (run_analyes_country) {
 # Build EpiSitrep docx ----------------------------------------------------
 
 
-my_doc <- read_docx(file.path(path.templates, 
-                              'template_country_episitrep.docx'))
-styles_info(my_doc)
+my_doc <- read_docx(file.path(path.templates, 'template_country_episitrep.docx'))
+
+source(file.path(path.R, 'utils_officer.R'), encoding = 'UTF-8')
+
+#styles_info(my_doc)
 
 # Doc title
 source(file.path(path.R, 'docx_section0_heading.R'), encoding = 'UTF-8')

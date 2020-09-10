@@ -23,7 +23,7 @@ run_analyes_country <- TRUE
 
 if (run_analyes_country) {
   
-  rmarkdown::render(input = file.path(path.Rmd, "rmd_html_country_episitrep.Rmd"), 
+  rmarkdown::render(input = file.path(path.Rmd, "country_episitrep_to_html.Rmd"), 
                     output_file = glue("{week_report}_draft_EpiSitrep_country_{country}_Covid-19.html"), 
                     output_dir  = path.local.country.week) 
 } else {
@@ -34,9 +34,6 @@ if (run_analyes_country) {
 
 
 # Build EpiSitrep docx ----------------------------------------------------
-source(file.path(path.R, 'utils_officer.R')   , encoding = 'UTF-8')
-
-
 my_doc <- read_docx(file.path(path.templates, 'template_country_episitrep.docx'))
 
 source(file.path(path.R, 'utils_officer.R'), encoding = 'UTF-8')
